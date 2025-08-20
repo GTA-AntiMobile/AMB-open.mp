@@ -115,13 +115,15 @@
 #include "./includes/core/vehicle/engine_upgrade.pwn"
 #include "./includes/core/vehicle/dealership.pwn"
 #include "./includes/core/vehicle/speedo.pwn"
+/*================== Eric Systems ==================*/
+#include "./includes/core/vehicle/cv.pwn"
 main() {}
 
 public OnGameModeInit()
 {
     print("______________________________________________");
     print("|                                            |");
-    print("|          Desma City Vietnamese             |");
+    print("|        Anti-Mobile City Vietnamese         |");
     print("|                                            |");
     print("|       Copyright  2024 AMB Team             |");
     print("|____________________________________________|");
@@ -132,7 +134,16 @@ public OnGameModeInit()
     
     g_mysql_Init();
     return 1;
+
+
 }
+
+	forward ConfirmModelsLoaded();
+	public ConfirmModelsLoaded()
+	{
+	    print("[CustomVeh] All custom models ready for streaming!");
+	    return 1;
+	}
 
 forward LoadCustomModels();
 public LoadCustomModels()
@@ -140,11 +151,23 @@ public LoadCustomModels()
     AddSimpleModel(-1, 19379, -2001, "/Server/object.dff", "/Server/LoginPanel.txd");
     AddSimpleModel(-1, 19379, -2003, "/Server/object.dff", "/Server/GPS.txd");
 
+
     AddCharModel(2, 20001, "/skin/dylan.dff", "/skin/dylan.txd");
     AddCharModel(155, 20002, "/skin/brian.dff", "/skin/brian.txd");
 	AddCharModel(280, 20003, "/skin/lapd1.dff", "/skin/lapd1.txd");
-	AddCharModel(280, 20004, "/skin/mafia.dff", "/skin/mafia.txd");
-	AddCharModel(280, 20005, "/skin/swat.dff", "/skin/swat.txd");
+ 	AddCharModel(287, 20004, "/skin/conmemay.dff", "/skin/conmemay.txd");
+	//army
+	AddCharModel(287, 20005, "/skin/army/army1.dff", "/skin/army/army1.txd");
+    AddCharModel(286, 20006, "/skin/army/fbi1.dff", "/skin/army/fbi1.txd");
+    AddCharModel(277, 20007, "/skin/army/lafd1-1.dff", "/skin/army/lafd1-1.txd");
+    AddCharModel(280, 20008, "/skin/army/lapd1-1.dff", "/skin/army/lapd1-1.txd");
+    AddCharModel(284, 20009, "/skin/army/lapdm1-1.dff", "/skin/army/lapdm1-1.txd");
+    AddCharModel(278, 20010, "/skin/army/lvfd1-1.dff", "/skin/army/lvfd1-1.txd");
+    AddCharModel(282, 20011, "/skin/army/lvpd1-1.dff", "/skin/army/lvpd1-1.txd");
+    AddCharModel(279, 20012, "/skin/army/sffd1-1.dff", "/skin/army/sffd1-1.txd");
+    AddCharModel(281, 20013, "/skin/army/sfpd1-1.dff", "/skin/army/sfpd1-1.txd");
+    AddCharModel(285, 20014, "/skin/army/swat1.dff", "/skin/army/swat1.txd");
+
     print("[Models] Custom models loaded successfully!");
     return 1;
 }

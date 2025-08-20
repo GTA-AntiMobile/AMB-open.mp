@@ -300,7 +300,7 @@ stock CreateDealershipTextDraws(playerid)
     }
     
     // Premium accent
-    DealershipTD[playerid][45] = CreatePlayerTextDraw(playerid, 160.0, 300.0, "~y~â˜… ~w~LUXURY ~y~â˜…");
+    DealershipTD[playerid][45] = CreatePlayerTextDraw(playerid, 160.0, 300.0, "~y~â?… ~w~LUXURY ~y~â?…");
     PlayerTextDrawLetterSize(playerid, DealershipTD[playerid][45], 0.250, 1.300);
     PlayerTextDrawColor(playerid, DealershipTD[playerid][45], 0xFFD700FF);
     PlayerTextDrawSetShadow(playerid, DealershipTD[playerid][45], 0);
@@ -622,7 +622,7 @@ CMD:carlist(playerid, params[])
 
 hook OnFeatureSystemInit()
 {
-    Create3DTextLabel("{4A90E2}â˜… PREMIUM CLASSIC SHOWROOM â˜…\n{FFFFFF}Exclusive Collection of Classic Vehicles\n{F1C40F}Use /dealership to browse vehicles", 
+    Create3DTextLabel("{4A90E2}â?… PREMIUM CLASSIC SHOWROOM â?…\n{FFFFFF}Exclusive Collection of Classic Vehicles\n{F1C40F}Use /dealership to browse vehicles", 
                       -1, DEALERSHIP_POS_X, DEALERSHIP_POS_Y, DEALERSHIP_POS_Z, 30.0, 0, true);
     
     printf("[DEALERSHIP] Premium system initialized with %d vehicles (%d pages)", MAX_DEALERSHIP_CARS, TOTAL_PAGES);

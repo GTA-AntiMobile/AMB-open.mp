@@ -1,4 +1,5 @@
 #if defined event_chancegambler
+
 CMD:togchancegambler(playerid, params[])
 {
 	if(PlayerInfo[playerid][pAdmin] >= 1338 || PlayerInfo[playerid][pPR] >= 2)
