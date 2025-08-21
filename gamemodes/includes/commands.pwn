@@ -9569,11 +9569,20 @@ CMD:accept(playerid, params[])
 							SendClientMessageEx(playerid, COLOR_WHITE, "Ban khong the chap nhan dieu nay khi ban dang trong mot family.");
 						}
 						else {
-							PlayerInfo[playerid][pFMember] = InviteFamily[playerid];
+							new fam = InviteFamily[playerid];
+							if(FamilyInfo[fam][FamilyMaxMembers] <= 0) FamilyInfo[fam][FamilyMaxMembers] = 10;
+							if(FamilyInfo[fam][FamilyMembers] >= FamilyInfo[fam][FamilyMaxMembers])
+							{
+								SendClientMessageEx(playerid, COLOR_GREY, "Family da day slot thanh vien, hay lien he leader de nang cap.");
+								InviteOffer[playerid] = INVALID_PLAYER_ID;
+								InviteFamily[playerid] = INVALID_FAMILY_ID;
+								return 1;
+							}
+							PlayerInfo[playerid][pFMember] = fam;
 							PlayerInfo[playerid][pRank] = 0;
 							PlayerInfo[playerid][pDivision] = 0;
-							FamilyInfo[InviteFamily[playerid]][FamilyMembers] ++;
-							SaveFamily(InviteFamily[playerid]);
+							FamilyInfo[fam][FamilyMembers] ++;
+							SaveFamily(fam);
 							format(szMessage, sizeof(szMessage), "   Ban da chap nhan loi moi tham gia %s, ban duoc moi boi %s.", FamilyInfo[InviteFamily[playerid]][FamilyName], GetPlayerNameEx(InviteOffer[playerid]));
 							SendClientMessageEx(playerid, COLOR_LIGHTBLUE, szMessage);
 							format(szMessage, sizeof(szMessage), "   %s da chap nhan loi moi va tham gia %s.", GetPlayerNameEx(playerid),FamilyInfo[InviteFamily[playerid]][FamilyName]);
@@ -16002,6 +16011,9 @@ CMD:pay(playerid, params[])
 		OnPlayerStatsUpdate(playerid);
 		OnPlayerStatsUpdate(id);
 		SetPVarInt(playerid, "LastTransaction", gettime());
+		
+		// Log money transfer
+		LogMoneyTransfer(playerid, id, amount, MONEY_TYPE_GIVE, "Chuyen tien truc tiep");
 	}
 	else SendClientMessageEx(playerid, COLOR_GREY, "Nguoi do khong gan ban.");
 	return 1;
@@ -20450,7 +20462,6 @@ CMD:createcdveh(playerid, params[]) {
 	return 1;
 }
 
-
 CMD:veh(playerid, params[]) {
 	if(PlayerInfo[playerid][pAdmin] >= 4) {
 
@@ -20458,20 +20469,20 @@ CMD:veh(playerid, params[]) {
 			iVehicle,
 			iColors[2];
 
-		if(sscanf(params, "iii", iVehicle, iColors[0], iColors[1])) {
-			SendClientMessageEx(playerid, COLOR_GREY, "SU DUNG: /veh [model ID] [color 1] [color 2]");
+		if(sscanf(params, "iD(0)D(0)", iVehicle, iColors[0], iColors[1])) {
+			SendClientMessageEx(playerid, COLOR_GREY, "USAGE: /veh [model ID] [color 1] [color 2]");
 		}
-		else if(!((400 <= iVehicle <= 611) || (20001 <= iVehicle <= 20099))) {
-			SendClientMessageEx(playerid, COLOR_GRAD2, "ID xe phai tu 400-611 (xe goc) hoac 20001-20099 (xe custom)");
+		else if(!(400 <= iVehicle <= 611)) {
+			SendClientMessageEx(playerid, COLOR_GRAD2, "Invalid model specified (model IDs start at 400, and end at 611).");
 		}
 		else if(IsATrain(iVehicle)) {
 			SendClientMessageEx(playerid, COLOR_GREY, "Trains cannot be spawned during runtime.");
 		}
 		else if(!(0 <= iColors[0] <= 255 && 0 <= iColors[1] <= 255)) {
-			SendClientMessageEx(playerid, COLOR_GRAD2, "ID mau xe phai tu 0 den 255.");
+			SendClientMessageEx(playerid, COLOR_GRAD2, "Invalid color specified (IDs start at 0, and end at 255).");
 		}
 		else for(new iIterator; iIterator < sizeof(CreatedCars); iIterator++) if(iIterator >= 49) {
-			return SendClientMessageEx(playerid, COLOR_GRAD1, "Da dat gioi han toi da 50 xe duoc tao ra.");
+			return SendClientMessageEx(playerid, COLOR_GRAD1, "The maximum limit of 50 spawned vehicles has been reached.");
 		}
 		else if(CreatedCars[iIterator] == INVALID_VEHICLE_ID) {
 
@@ -20486,10 +20497,10 @@ CMD:veh(playerid, params[]) {
 			Vehicle_ResetData(CreatedCars[iIterator]);
 			LinkVehicleToInterior(CreatedCars[iIterator], GetPlayerInterior(playerid));
 			SetVehicleVirtualWorld(CreatedCars[iIterator], fVW);
-			return SendClientMessageEx(playerid, COLOR_GREY, "Xe da duoc tao ra!");
+			return SendClientMessageEx(playerid, COLOR_GREY, "Vehicle spawned!");
 		}
 	}
-	else SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong duoc phep su dung lenh nay.");
+	else SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong co quyen su dung lenh nay !");
 	return 1;
 }
 
@@ -38841,6 +38852,9 @@ CMD:safedeposit(playerid, params[]) // TransferStorage(playerid, storageid, from
 				format(string, sizeof(string), "%s has deposited $%s into %s's safe", GetPlayerNameEx(playerid), number_format(amount), FamilyInfo[family][FamilyName]);
 				format(file, sizeof(file), "family_logs/%d/%d-%02d-%02d.log", family, year, month, day);
 				Log(file, string);
+				
+				// Log money transfer
+				LogMoneyTransfer(playerid, INVALID_PLAYER_ID, amount, MONEY_TYPE_BUSINESS, "Gui tien vao family safe");
 			}
 			case 2: // Pot
 			{
@@ -38950,6 +38964,9 @@ CMD:safewithdraw(playerid, params[]) // TransferStorage(playerid, storageid, fro
 				{
 					SetPVarInt(playerid, "Special_FamilyID", family);
 					TransferStorage(playerid, -1, -1, -1, itemid, amount, -1, 5);
+					
+					// Log money transfer
+					LogMoneyTransfer(playerid, INVALID_PLAYER_ID, amount, MONEY_TYPE_BUSINESS, "Rut tien tu family safe");
 				}
 				else return SendClientMessageEx(playerid, COLOR_WHITE, "Your family safe does not have enough for you to withdraw!");
 			}
@@ -55109,3 +55126,4 @@ CMD:fireworknear(playerid, params[])
 		return SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong the su dung lenh nay!");
 	return true;
 }
+

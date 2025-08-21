@@ -534,6 +534,8 @@ enum fInfo
 	FamilyTurfTokens,
 	FamilyLeader[MAX_PLAYER_NAME],
 	FamilyMembers,
+	FamilyLevel,
+	FamilyMaxMembers,
 	Float:FamilySpawn[4],
 	FamilyInterior,
 	FamilyCash,
@@ -547,6 +549,7 @@ enum fInfo
 	FamilySafeInt,
 	FamilyUSafe,
 	FamilyPickup,
+	Text3D:FamilyTextLabel,
 	FamilyMaxSkins,
 	FamilySkins[8],
 	Float: FamilyEntrance[4],
@@ -558,7 +561,7 @@ enum fInfo
 	FamilyCustomMap,
 	FamilyVirtualWorld,
 	FamilyResetSpawns,
-	FamilyGuns[10],
+	FamilyGuns[50], // Increased to support higher level families
 	gtObject,
 	gt_Text[32],
 	gt_FontFace[32],
@@ -985,7 +988,9 @@ enum pInfo
 	pSVIPExVoucher,
 	pGVIPExVoucher,
 	pVIPSellable,
-	pReceivedPrize
+	pReceivedPrize,
+	pMusicPermission,
+	pInventoryData[1024] // Luu inventory duoi dang string
 };
 
 enum pvInfo
@@ -1025,7 +1030,10 @@ enum pvInfo
 	Float:pvCrashX,
 	Float:pvCrashY,
 	Float:pvCrashZ,
-	Float:pvCrashAngle
+	Float:pvCrashAngle,
+	pvMusicURL[256],
+	pvMusicPlaying,
+	pvMusicOwner
 };
 
 enum ptInfo
@@ -1376,3 +1384,14 @@ enum cStore
 	cId,
 	cXP
 };
+
+// Custom Vehicle System
+enum E_CUSTOM_VEHICLE
+{
+    cv_ModelID,
+    cv_BaseID,
+    cv_Name[64],
+    cv_DFFPath[128],
+    cv_TXDPath[128],
+    bool:cv_Loaded
+}

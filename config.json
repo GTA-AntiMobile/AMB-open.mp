@@ -47,7 +47,8 @@
         "use_zone_names": false,
         "validate_animations": true,
         "vehicle_respawn_time": 10000,
-        "weather": 10
+        "weather": 10,
+        "max_vehicles": 2000
     },
     "language": "",
     "logging": {
@@ -96,7 +97,7 @@
     "pawn": {
         "legacy_plugins": [
 	    "crashdetect","streamer","PawnPlus","ColAndreas", 
-	    "mysql","samp_bcrypt","Whirlpool","pawn-memory"
+	    "mysql","samp_bcrypt","Whirlpool","pawn-memory","requests"
         ],
         "main_scripts": [
             "amb-compile 1"

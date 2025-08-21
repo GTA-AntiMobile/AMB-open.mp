@@ -1,6 +1,12 @@
 #include <YSI\YSI_Coding\y_hooks>
 
-#define SPEEDO_UPDATE_INTERVAL 250 
+#define SPEEDO_UPDATE_INTERVAL 25     
+#define SPEED_UPDATE_RATE 1            
+#define HEALTH_UPDATE_RATE 5           
+#define FUEL_UPDATE_RATE 5            
+#define LOCATION_UPDATE_RATE 20        
+#define STATUS_UPDATE_RATE 8           
+
 #define MAX_VEHICLE_SPEED 300.0
 #define FUEL_CONSUMPTION_RATE 0.1
 
@@ -11,110 +17,149 @@ enum E_VEHICLE_SPEEDO_DATA
     vs_LastFuel,
     vs_LastHealth,
     vs_LastZone[32],
-    vs_UpdateTimer
+    vs_UpdateTimer,
+    vs_UpdateCounter,              
+    vs_LastVehicleID,             
+    Float:vs_LastSpeedFloat       
 }
 
 new PlayerSpeedoData[MAX_PLAYERS][E_VEHICLE_SPEEDO_DATA];
-new PlayerText:SpeedoTD[MAX_PLAYERS][14]; 
+new PlayerText:Speedo_PTD[MAX_PLAYERS][6];
 
 
 /*================== SPEEDOMETER FUNCTIONS ==================*/
 
 stock Float:GetVehicleFuelLevel(vehicleid)
 {
-    new Float:health;
-    GetVehicleHealth(vehicleid, health);
-    return (health / 1000.0) * 100.0; 
+    if(vehicleid < 0 || vehicleid >= MAX_VEHICLES) return 0.0;
+    
+    new Float:fuel = VehicleFuel[vehicleid];
+    
+    if(fuel < 0.0) fuel = 0.0;
+    if(fuel > 1000.0) fuel = 100.0; 
+    
+    return fuel;
 }
+
+stock GetSpeedoTextureName(digit)
+{
+    new textureName[32];
+    switch(digit) {
+        case 0: format(textureName, sizeof(textureName), "mdl-2004:Asset0");
+        case 1: format(textureName, sizeof(textureName), "mdl-2004:Asset1");
+        case 2: format(textureName, sizeof(textureName), "mdl-2004:Asset2");
+        case 3: format(textureName, sizeof(textureName), "mdl-2004:Asset3");
+        case 4: format(textureName, sizeof(textureName), "mdl-2004:Asset4");
+        case 5: format(textureName, sizeof(textureName), "mdl-2004:Asset5");
+        case 6: format(textureName, sizeof(textureName), "mdl-2004:Asset6");
+        case 7: format(textureName, sizeof(textureName), "mdl-2004:Asset7");
+        case 8: format(textureName, sizeof(textureName), "mdl-2004:Asset8");
+        case 9: format(textureName, sizeof(textureName), "mdl-2004:Asset9");
+        default: format(textureName, sizeof(textureName), "mdl-2004:Asset0");
+    }
+    return textureName;
+}
+
+stock UpdateSpeedoDigits(playerid, speed)
+{
+    new hundreds = (speed / 100) % 10;
+    new tens = (speed / 10) % 10;
+    new ones = speed % 10;
+    
+    // Dynamic color based on speed
+    new color;
+    if(speed > 150)
+        color = 0xFF0000FF;      // Red for dangerous speed
+    else if(speed > 100)
+        color = 0xFF6600FF;      // Orange for high speed
+    else
+        color = 0xFFFFFFFF;      // White for normal speed
+    
+    // Update hundreds digit
+    PlayerTextDrawSetString(playerid, Speedo_PTD[playerid][0], GetSpeedoTextureName(hundreds));
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][0], color);
+    PlayerTextDrawShow(playerid, Speedo_PTD[playerid][0]);
+    
+    // Update tens digit
+    PlayerTextDrawSetString(playerid, Speedo_PTD[playerid][1], GetSpeedoTextureName(tens));
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][1], color);
+    PlayerTextDrawShow(playerid, Speedo_PTD[playerid][1]);
+    
+    // Update ones digit
+    PlayerTextDrawSetString(playerid, Speedo_PTD[playerid][2], GetSpeedoTextureName(ones));
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][2], color);
+    PlayerTextDrawShow(playerid, Speedo_PTD[playerid][2]);
+    
+    // Keep KM/H always white
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][5], 0xFFFFFFFF);
+    PlayerTextDrawShow(playerid, Speedo_PTD[playerid][5]);
+}
+
+
+
+
 
 stock CreateSpeedoTextDraws(playerid)
 {
-    SpeedoTD[playerid][0] = CreatePlayerTextDraw(playerid, 480.0, 350.0, "LD_BUM:blkdot");
-    PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][0], 150.0, 80.0);
-    PlayerTextDrawAlignment(playerid, SpeedoTD[playerid][0], 1);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][0], 0x000000BB);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][0], 4);
-    
-    SpeedoTD[playerid][1] = CreatePlayerTextDraw(playerid, 555.0, 360.0, "Vehicle Name");
-    PlayerTextDrawLetterSize(playerid, SpeedoTD[playerid][1], 0.160, 0.800);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][1], 0xFFFFFFFF);
-    PlayerTextDrawSetShadow(playerid, SpeedoTD[playerid][1], 1);
-    PlayerTextDrawAlignment(playerid, SpeedoTD[playerid][1], 2);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][1], 1);
-    
-    SpeedoTD[playerid][2] = CreatePlayerTextDraw(playerid, 490.0, 375.0, "LD_BUM:blkdot");
-    PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][2], 130.0, 6.0);
-    PlayerTextDrawAlignment(playerid, SpeedoTD[playerid][2], 1);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][2], 0x333333FF);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][2], 4);
-    
-    SpeedoTD[playerid][3] = CreatePlayerTextDraw(playerid, 490.0, 375.0, "LD_BUM:blkdot");
-    PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][3], 0.0, 6.0);
-    PlayerTextDrawAlignment(playerid, SpeedoTD[playerid][3], 1);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][3], 0x4A90E2FF);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][3], 4);
-    
-    SpeedoTD[playerid][4] = CreatePlayerTextDraw(playerid, 485.0, 372.0, "~b~SPD");
-    PlayerTextDrawLetterSize(playerid, SpeedoTD[playerid][4], 0.140, 0.700);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][4], 0x4A90E2FF);
-    PlayerTextDrawSetShadow(playerid, SpeedoTD[playerid][4], 1);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][4], 1);
-    
-    SpeedoTD[playerid][5] = CreatePlayerTextDraw(playerid, 490.0, 385.0, "LD_BUM:blkdot");
-    PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][5], 130.0, 6.0);
-    PlayerTextDrawAlignment(playerid, SpeedoTD[playerid][5], 1);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][5], 0x333333FF);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][5], 4);
-    
-    SpeedoTD[playerid][6] = CreatePlayerTextDraw(playerid, 490.0, 385.0, "LD_BUM:blkdot");
-    PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][6], 130.0, 6.0);
-    PlayerTextDrawAlignment(playerid, SpeedoTD[playerid][6], 1);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][6], 0x4CAF50FF);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][6], 4);
-    
-    SpeedoTD[playerid][7] = CreatePlayerTextDraw(playerid, 485.0, 382.0, "~r~HP");
-    PlayerTextDrawLetterSize(playerid, SpeedoTD[playerid][7], 0.140, 0.700);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][7], 0xFF5722FF);
-    PlayerTextDrawSetShadow(playerid, SpeedoTD[playerid][7], 1);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][7], 1);
-    
-    SpeedoTD[playerid][8] = CreatePlayerTextDraw(playerid, 490.0, 395.0, "LD_BUM:blkdot");
-    PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][8], 130.0, 6.0);
-    PlayerTextDrawAlignment(playerid, SpeedoTD[playerid][8], 1);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][8], 0x333333FF);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][8], 4);
-    
-    SpeedoTD[playerid][9] = CreatePlayerTextDraw(playerid, 490.0, 395.0, "LD_BUM:blkdot");
-    PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][9], 130.0, 6.0);
-    PlayerTextDrawAlignment(playerid, SpeedoTD[playerid][9], 1);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][9], 0xFFC107FF);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][9], 4);
-    
-    SpeedoTD[playerid][10] = CreatePlayerTextDraw(playerid, 485.0, 392.0, "~y~FL");
-    PlayerTextDrawLetterSize(playerid, SpeedoTD[playerid][10], 0.140, 0.700);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][10], 0xFFC107FF);
-    PlayerTextDrawSetShadow(playerid, SpeedoTD[playerid][10], 1);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][10], 1);
-    
-    SpeedoTD[playerid][11] = CreatePlayerTextDraw(playerid, 555.0, 405.0, "Los Santos");
-    PlayerTextDrawLetterSize(playerid, SpeedoTD[playerid][11], 0.140, 0.700);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][11], 0xCCCCCCFF);
-    PlayerTextDrawSetShadow(playerid, SpeedoTD[playerid][11], 1);
-    PlayerTextDrawAlignment(playerid, SpeedoTD[playerid][11], 2);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][11], 1);
-    
-    SpeedoTD[playerid][12] = CreatePlayerTextDraw(playerid, 490.0, 415.0, "~g~ENG");
-    PlayerTextDrawLetterSize(playerid, SpeedoTD[playerid][12], 0.130, 0.650);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][12], 0x4CAF50FF);
-    PlayerTextDrawSetShadow(playerid, SpeedoTD[playerid][12], 1);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][12], 1);
-    
-    SpeedoTD[playerid][13] = CreatePlayerTextDraw(playerid, 620.0, 415.0, "~w~LGT");
-    PlayerTextDrawLetterSize(playerid, SpeedoTD[playerid][13], 0.130, 0.650);
-    PlayerTextDrawColor(playerid, SpeedoTD[playerid][13], 0xFFFFFFFF);
-    PlayerTextDrawSetShadow(playerid, SpeedoTD[playerid][13], 1);
-    PlayerTextDrawFont(playerid, SpeedoTD[playerid][13], 1);
-    
+    Speedo_PTD[playerid][0] = CreatePlayerTextDraw(playerid, 470.000, 346.000, "mdl-2004:Asset0");
+    PlayerTextDrawTextSize(playerid, Speedo_PTD[playerid][0], 22.000, 25.000);
+    PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][0], TEXT_DRAW_ALIGN_LEFT);
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][0], -1);
+    PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][0], 0);
+    PlayerTextDrawSetOutline(playerid, Speedo_PTD[playerid][0], 0);
+    PlayerTextDrawBackgroundColour(playerid, Speedo_PTD[playerid][0], 255);
+    PlayerTextDrawFont(playerid, Speedo_PTD[playerid][0], TEXT_DRAW_FONT_SPRITE_DRAW);
+    PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][0], true);
+
+    Speedo_PTD[playerid][1] = CreatePlayerTextDraw(playerid, 482.000, 346.000, "mdl-2004:Asset0");
+    PlayerTextDrawTextSize(playerid, Speedo_PTD[playerid][1], 22.000, 25.000);
+    PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][1], TEXT_DRAW_ALIGN_LEFT);
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][1], -1);
+    PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][1], 0);
+    PlayerTextDrawSetOutline(playerid, Speedo_PTD[playerid][1], 0);
+    PlayerTextDrawBackgroundColour(playerid, Speedo_PTD[playerid][1], 255);
+    PlayerTextDrawFont(playerid, Speedo_PTD[playerid][1], TEXT_DRAW_FONT_SPRITE_DRAW);
+    PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][1], true);
+
+    Speedo_PTD[playerid][2] = CreatePlayerTextDraw(playerid, 494.000, 346.000, "mdl-2004:Asset0");
+    PlayerTextDrawTextSize(playerid, Speedo_PTD[playerid][2], 22.000, 25.000);
+    PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][2], TEXT_DRAW_ALIGN_LEFT);
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][2], -1);
+    PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][2], 0);
+    PlayerTextDrawSetOutline(playerid, Speedo_PTD[playerid][2], 0);
+    PlayerTextDrawBackgroundColour(playerid, Speedo_PTD[playerid][2], 255);
+    PlayerTextDrawFont(playerid, Speedo_PTD[playerid][2], TEXT_DRAW_FONT_SPRITE_DRAW);
+    PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][2], true);
+
+    Speedo_PTD[playerid][3] = CreatePlayerTextDraw(playerid, 489.000, 368.000, "100.0");
+    PlayerTextDrawLetterSize(playerid, Speedo_PTD[playerid][3], 0.230, 0.999);
+    PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][3], TEXT_DRAW_ALIGN_LEFT);
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][3], -1);
+    PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][3], 1);
+    PlayerTextDrawSetOutline(playerid, Speedo_PTD[playerid][3], 0);
+    PlayerTextDrawBackgroundColour(playerid, Speedo_PTD[playerid][3], 150);
+    PlayerTextDrawFont(playerid, Speedo_PTD[playerid][3], TEXT_DRAW_FONT_2);
+    PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][3], true);
+
+    Speedo_PTD[playerid][4] = CreatePlayerTextDraw(playerid, 516.000, 368.000, "ML");
+    PlayerTextDrawLetterSize(playerid, Speedo_PTD[playerid][4], 0.260, 0.999);
+    PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][4], TEXT_DRAW_ALIGN_LEFT);
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][4], -1);
+    PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][4], 1);
+    PlayerTextDrawSetOutline(playerid, Speedo_PTD[playerid][4], 0);
+    PlayerTextDrawBackgroundColour(playerid, Speedo_PTD[playerid][4], 150);
+    PlayerTextDrawFont(playerid, Speedo_PTD[playerid][4], TEXT_DRAW_FONT_2);
+    PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][4], true);
+
+    Speedo_PTD[playerid][5] = CreatePlayerTextDraw(playerid, 512.000, 353.000, "KM/H");
+    PlayerTextDrawLetterSize(playerid, Speedo_PTD[playerid][5], 0.230, 1.399);
+    PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][5], TEXT_DRAW_ALIGN_LEFT);
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][5], -1);
+    PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][5], 0);
+    PlayerTextDrawSetOutline(playerid, Speedo_PTD[playerid][5], 0);
+    PlayerTextDrawBackgroundColour(playerid, Speedo_PTD[playerid][5], 150);
+    PlayerTextDrawFont(playerid, Speedo_PTD[playerid][5], TEXT_DRAW_FONT_2);
+    PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][5], true);
     return 1;
 }
 
@@ -122,16 +167,16 @@ stock ShowSpeedometer(playerid)
 {
     if(PlayerSpeedoData[playerid][vs_SpeedoVisible]) return 0;
     
-    if(SpeedoTD[playerid][0] == PlayerText:INVALID_TEXT_DRAW)
+    if(Speedo_PTD[playerid][0] == PlayerText:INVALID_TEXT_DRAW)
     {
         CreateSpeedoTextDraws(playerid);
     }
     
-    for(new i = 0; i < 14; i++)
+    for(new i = 0; i < 6; i++)
     {
-        if(SpeedoTD[playerid][i] != PlayerText:INVALID_TEXT_DRAW)
+        if(Speedo_PTD[playerid][i] != PlayerText:INVALID_TEXT_DRAW)
         {
-            PlayerTextDrawShow(playerid, SpeedoTD[playerid][i]);
+            PlayerTextDrawShow(playerid, Speedo_PTD[playerid][i]);
         }
     }
     
@@ -146,11 +191,11 @@ stock HideSpeedometer(playerid)
 {
     if(!PlayerSpeedoData[playerid][vs_SpeedoVisible]) return 0;
     
-    for(new i = 0; i < 14; i++)
+    for(new i = 0; i < 6; i++)
     {
-        if(SpeedoTD[playerid][i] != PlayerText:INVALID_TEXT_DRAW)
+        if(Speedo_PTD[playerid][i] != PlayerText:INVALID_TEXT_DRAW)
         {
-            PlayerTextDrawHide(playerid, SpeedoTD[playerid][i]);
+            PlayerTextDrawHide(playerid, Speedo_PTD[playerid][i]);
         }
     }
     
@@ -175,115 +220,60 @@ public UpdateSpeedometer(playerid)
         return 0;
     }
     
-    static vehicleid, Float:vx, Float:vy, Float:vz, speed;
-    static Float:health, healthPercent, Float:fuel, fuelPercent;
-    static Float:speedWidth, Float:healthWidth, Float:fuelWidth;
-    
-    vehicleid = GetPlayerVehicleID(playerid);
+    new vehicleid = GetPlayerVehicleID(playerid);
     if(vehicleid == 0) return 0;
     
-    GetVehicleVelocity(vehicleid, vx, vy, vz);
-    speed = floatround(floatsqroot(vx*vx + vy*vy + vz*vz) * 181.5);
+    PlayerSpeedoData[playerid][vs_UpdateCounter]++;
     
-    if(PlayerSpeedoData[playerid][vs_LastSpeed] != speed)
+    if(PlayerSpeedoData[playerid][vs_UpdateCounter] % SPEED_UPDATE_RATE == 0)
     {
-        PlayerSpeedoData[playerid][vs_LastSpeed] = speed;
-        speedWidth = (130.0 * speed) / MAX_VEHICLE_SPEED;
-        if(speedWidth > 130.0) speedWidth = 130.0;
-        PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][3], speedWidth, 6.0);
+        new Float:vx, Float:vy, Float:vz;
+        GetVehicleVelocity(vehicleid, vx, vy, vz);
+        new Float:currentSpeed = floatsqroot(vx*vx + vy*vy + vz*vz) * 181.5;
+        new speed = floatround(currentSpeed);
         
-        if(speed > 120)
-            PlayerTextDrawColor(playerid, SpeedoTD[playerid][3], 0xFF5722FF);
-        else if(speed > 80)
-            PlayerTextDrawColor(playerid, SpeedoTD[playerid][3], 0xFFC107FF);
-        else
-            PlayerTextDrawColor(playerid, SpeedoTD[playerid][3], 0x4A90E2FF);
+        // Ensure speed is within reasonable bounds
+        if(speed < 0) speed = 0;
+        if(speed > 999) speed = 999;
         
-        PlayerTextDrawShow(playerid, SpeedoTD[playerid][3]);
-    }
-    
-    static lastVehicleUpdate[MAX_PLAYERS] = {-1, ...};
-    if(lastVehicleUpdate[playerid] != vehicleid)
-    {
-        PlayerTextDrawSetString(playerid, SpeedoTD[playerid][1], GetVehicleName(vehicleid));
-        lastVehicleUpdate[playerid] = vehicleid;
-    }
-    
-    static healthUpdateCounter[MAX_PLAYERS];
-    if(++healthUpdateCounter[playerid] >= 3)
-    {
-        healthUpdateCounter[playerid] = 0;
-        GetVehicleHealth(vehicleid, health);
-        healthPercent = floatround((health / 1000.0) * 100.0);
-        
-        if(PlayerSpeedoData[playerid][vs_LastHealth] != healthPercent)
+        // Always update for smoother display
+        if(PlayerSpeedoData[playerid][vs_LastSpeed] != speed)
         {
-            healthWidth = (130.0 * healthPercent) / 100.0;
-            PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][6], healthWidth, 6.0);
+            PlayerSpeedoData[playerid][vs_LastSpeed] = speed;
+            PlayerSpeedoData[playerid][vs_LastSpeedFloat] = currentSpeed;
             
-            if(healthPercent > 60)
-                PlayerTextDrawColor(playerid, SpeedoTD[playerid][6], 0x4CAF50FF);
-            else if(healthPercent > 30)
-                PlayerTextDrawColor(playerid, SpeedoTD[playerid][6], 0xFFC107FF);
-            else
-                PlayerTextDrawColor(playerid, SpeedoTD[playerid][6], 0xFF5722FF);
-            
-            PlayerTextDrawShow(playerid, SpeedoTD[playerid][6]);
-            PlayerSpeedoData[playerid][vs_LastHealth] = healthPercent;
+            // Update digital speed display using texture digits
+            UpdateSpeedoDigits(playerid, speed);
         }
     }
     
-    static fuelUpdateCounter[MAX_PLAYERS];
-    if(++fuelUpdateCounter[playerid] >= 4)
+    if(PlayerSpeedoData[playerid][vs_UpdateCounter] % FUEL_UPDATE_RATE == 0)
     {
-        fuelUpdateCounter[playerid] = 0;
-        fuel = GetVehicleFuelLevel(vehicleid); 
-        fuelPercent = floatround(fuel);
+        new Float:fuel = GetVehicleFuelLevel(vehicleid);
+        new fuelInt = floatround(fuel);
         
-        if(PlayerSpeedoData[playerid][vs_LastFuel] != fuelPercent)
+        if(PlayerSpeedoData[playerid][vs_LastFuel] != fuelInt)
         {
-            fuelWidth = (130.0 * fuelPercent) / 100.0;
-            PlayerTextDrawTextSize(playerid, SpeedoTD[playerid][9], fuelWidth, 6.0);
+            PlayerSpeedoData[playerid][vs_LastFuel] = fuelInt;
             
-            if(fuelPercent > 25)
-                PlayerTextDrawColor(playerid, SpeedoTD[playerid][9], 0xFFC107FF);
-            else
-                PlayerTextDrawColor(playerid, SpeedoTD[playerid][9], 0xFF5722FF);
-            
-            PlayerTextDrawShow(playerid, SpeedoTD[playerid][9]);
-            PlayerSpeedoData[playerid][vs_LastFuel] = fuelPercent;
+            // Update fuel display with text
+            new fuelText[16];
+            format(fuelText, sizeof(fuelText), "%.1f", fuel);
+            PlayerTextDrawSetString(playerid, Speedo_PTD[playerid][3], fuelText);
+            PlayerTextDrawShow(playerid, Speedo_PTD[playerid][3]);
         }
     }
     
-    static locationUpdateCounter[MAX_PLAYERS];
-    if(++locationUpdateCounter[playerid] >= 15) 
+    // Ensure all TextDraws are visible every few updates
+    if(PlayerSpeedoData[playerid][vs_UpdateCounter] % 10 == 0)
     {
-        locationUpdateCounter[playerid] = 0;
-        new zone[32];
-        GetPlayerZone(playerid, zone, sizeof(zone));
-        if(strcmp(PlayerSpeedoData[playerid][vs_LastZone], zone) != 0)
+        for(new i = 0; i < 6; i++)
         {
-            PlayerTextDrawSetString(playerid, SpeedoTD[playerid][11], zone);
-            format(PlayerSpeedoData[playerid][vs_LastZone], 32, "%s", zone);
+            if(Speedo_PTD[playerid][i] != PlayerText:INVALID_TEXT_DRAW)
+            {
+                PlayerTextDrawShow(playerid, Speedo_PTD[playerid][i]);
+            }
         }
-    }
-    
-    static statusUpdateCounter[MAX_PLAYERS];
-    if(++statusUpdateCounter[playerid] >= 8) 
-    {
-        statusUpdateCounter[playerid] = 0;
-        new engine, lights, alarm, doors, bonnet, boot, objective;
-        GetVehicleParamsEx(vehicleid, engine, lights, alarm, doors, bonnet, boot, objective);
-        
-        if(engine == 1)
-            PlayerTextDrawSetString(playerid, SpeedoTD[playerid][12], "~g~ENG");
-        else
-            PlayerTextDrawSetString(playerid, SpeedoTD[playerid][12], "~r~ENG");
-        
-        if(lights == 1)
-            PlayerTextDrawSetString(playerid, SpeedoTD[playerid][13], "~y~LGT");
-        else
-            PlayerTextDrawSetString(playerid, SpeedoTD[playerid][13], "~w~LGT");
     }
     
     return 1;
@@ -447,11 +437,14 @@ hook OnPlayerConnect(playerid)
     PlayerSpeedoData[playerid][vs_LastFuel] = 0;
     PlayerSpeedoData[playerid][vs_LastHealth] = 0;
     PlayerSpeedoData[playerid][vs_UpdateTimer] = -1;
+    PlayerSpeedoData[playerid][vs_UpdateCounter] = 0;
+    PlayerSpeedoData[playerid][vs_LastVehicleID] = -1;
+    PlayerSpeedoData[playerid][vs_LastSpeedFloat] = 0.0;
     format(PlayerSpeedoData[playerid][vs_LastZone], 32, "");
     
-    for(new i = 0; i < 14; i++)
+    for(new i = 0; i < 6; i++)
     {
-        SpeedoTD[playerid][i] = PlayerText:INVALID_TEXT_DRAW;
+        Speedo_PTD[playerid][i] = PlayerText:INVALID_TEXT_DRAW;
     }
     
     return 1;

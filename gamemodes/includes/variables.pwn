@@ -1501,6 +1501,8 @@ new HoldingObjectsAll[][HoldingEnumAll] = {
 {19320, 0, "Pumpkin Toy"}
 };
 
+
+
 new HoldingObjects[206][HoldingEnum] = {
 {18632,1000,"FishingRod"},
 {18633,1500,"Wrench"},
@@ -2694,3 +2696,4 @@ stock GetPlayerStreetZone(Float: x, Float: y, zone[], const zone2[], len)
     }
     return format(zone, len, "%s", zone2); 
 }
+

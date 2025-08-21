@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml-stylesheet href="file:///C|/Users/Dylan/Documents/GitHub/amb-project/qawno/xml/pawndoc.xsl" type="text/xsl"?>
+<doc source="C:\Users\Dylan\Documents\GitHub\amb-project\gamemodes\includes\OnPlayerLoad.pwn">
+	<assembly>
+		<name>OnPlayerLoad.pwn</name>
+	</assembly>
+	<members>
+
+		<!-- enumerations -->
+
+		<!-- constants -->
+		<member name="C:false" value="0">
+			<tagname value="bool"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="C:true" value="1">
+			<tagname value="bool"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+
+		<!-- variables -->
+		<member name="F:__date">
+		</member>
+		<member name="F:__file">
+		</member>
+		<member name="F:__time">
+		</member>
+
+		<!-- functions -->
+		<member name="M:ABroadCast" syntax="ABroadCast()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:CountFlags" syntax="CountFlags()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:CountTickets" syntax="CountTickets()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:CreatePlayerTextDraws" syntax="CreatePlayerTextDraws()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:DeletePVar" syntax="DeletePVar()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GameTextForPlayer" syntax="GameTextForPlayer()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetHomeCount" syntax="GetHomeCount()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetHourReportCount" syntax="GetHourReportCount()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetHourRequestCount" syntax="GetHourRequestCount()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetPlayerIp" syntax="GetPlayerIp()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetPlayerIpEx" syntax="GetPlayerIpEx()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetPlayerName" syntax="GetPlayerName()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetPlayerNameEx" syntax="GetPlayerNameEx()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetPlayerNameExt" syntax="GetPlayerNameExt()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetPlayerSQLId" syntax="GetPlayerSQLId()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetReportCount" syntax="GetReportCount()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetRequestCount" syntax="GetRequestCount()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:GetStaffRank" syntax="GetStaffRank()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:HideMainMenuGUI" syntax="HideMainMenuGUI()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:HideNoticeGUIFrame" syntax="HideNoticeGUIFrame()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:LoadPlayerDisabledVehicles" syntax="LoadPlayerDisabledVehicles()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:LoadPlayerInventory" syntax="LoadPlayerInventory()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:LoadTickets" syntax="LoadTickets()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:LoadTreasureInventory" syntax="LoadTreasureInventory()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:Log" syntax="Log()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:MySQLBan" syntax="MySQLBan()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:OnPlayerLoad" syntax="OnPlayerLoad(playerid)">
+			<attribute name="public"/>
+			<stacksize value="394"/>
+			<dependency name="ABroadCast"/>
+			<dependency name="CountFlags"/>
+			<dependency name="CountTickets"/>
+			<dependency name="CreatePlayerTextDraws"/>
+			<dependency name="DeletePVar"/>
+			<dependency name="GameTextForPlayer"/>
+			<dependency name="GetHomeCount"/>
+			<dependency name="GetHourReportCount"/>
+			<dependency name="GetHourRequestCount"/>
+			<dependency name="GetPlayerIp"/>
+			<dependency name="GetPlayerIpEx"/>
+			<dependency name="GetPlayerName"/>
+			<dependency name="GetPlayerNameEx"/>
+			<dependency name="GetPlayerNameExt"/>
+			<dependency name="GetPlayerSQLId"/>
+			<dependency name="GetReportCount"/>
+			<dependency name="GetRequestCount"/>
+			<dependency name="GetStaffRank"/>
+			<dependency name="HideMainMenuGUI"/>
+			<dependency name="HideNoticeGUIFrame"/>
+			<dependency name="LoadPlayerDisabledVehicles"/>
+			<dependency name="LoadPlayerInventory"/>
+			<dependency name="LoadTickets"/>
+			<dependency name="LoadTreasureInventory"/>
+			<dependency name="Log"/>
+			<dependency name="MySQLBan"/>
+			<dependency name="RefreshBusinessPickup"/>
+			<dependency name="SaveBusiness"/>
+			<dependency name="SendClientMessageEx"/>
+			<dependency name="SendClientMessageToAllEx"/>
+			<dependency name="SetCameraBehindPlayer"/>
+			<dependency name="SetPVarInt"/>
+			<dependency name="SetPlayerFightingStyle"/>
+			<dependency name="SetPlayerScore"/>
+			<dependency name="SetPlayerToTeamColor"/>
+			<dependency name="SetSpawnInfo"/>
+			<dependency name="SetTimerEx"/>
+			<dependency name="SetUnreadMailsNotification"/>
+			<dependency name="ShopTechBroadCast"/>
+			<dependency name="SystemBan"/>
+			<dependency name="TextDrawBackgroundColour"/>
+			<dependency name="TextDrawColour"/>
+			<dependency name="TextDrawCreate"/>
+			<dependency name="TextDrawFont"/>
+			<dependency name="TextDrawLetterSize"/>
+			<dependency name="TextDrawSetOutline"/>
+			<dependency name="TextDrawSetProportional"/>
+			<dependency name="TextDrawSetShadow"/>
+			<dependency name="TogglePlayerControllable"/>
+			<dependency name="TogglePlayerSpectating"/>
+			<dependency name="false"/>
+			<dependency name="floatround"/>
+			<dependency name="foreach"/>
+			<dependency name="format"/>
+			<dependency name="g_mysql_AccountOnline"/>
+			<dependency name="getdate"/>
+			<dependency name="gettime"/>
+			<dependency name="mysql_function_query"/>
+			<dependency name="printf"/>
+			<dependency name="strcpy"/>
+			<dependency name="true"/>
+			<param name="playerid">
+			</param>
+		</member>
+		<member name="M:RefreshBusinessPickup" syntax="RefreshBusinessPickup()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SaveBusiness" syntax="SaveBusiness()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SendClientMessageEx" syntax="SendClientMessageEx()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SendClientMessageToAllEx" syntax="SendClientMessageToAllEx()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SetCameraBehindPlayer" syntax="SetCameraBehindPlayer()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SetPVarInt" syntax="SetPVarInt()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SetPlayerFightingStyle" syntax="SetPlayerFightingStyle()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SetPlayerScore" syntax="SetPlayerScore()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SetPlayerToTeamColor" syntax="SetPlayerToTeamColor()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SetSpawnInfo" syntax="SetSpawnInfo()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SetTimerEx" syntax="SetTimerEx()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SetUnreadMailsNotification" syntax="SetUnreadMailsNotification()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:ShopTechBroadCast" syntax="ShopTechBroadCast()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:SystemBan" syntax="SystemBan()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TextDrawBackgroundColour" syntax="TextDrawBackgroundColour()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TextDrawColour" syntax="TextDrawColour()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TextDrawCreate" syntax="TextDrawCreate()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TextDrawFont" syntax="TextDrawFont()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TextDrawLetterSize" syntax="TextDrawLetterSize()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TextDrawSetOutline" syntax="TextDrawSetOutline()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TextDrawSetProportional" syntax="TextDrawSetProportional()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TextDrawSetShadow" syntax="TextDrawSetShadow()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TogglePlayerControllable" syntax="TogglePlayerControllable()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:TogglePlayerSpectating" syntax="TogglePlayerSpectating()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:floatround" syntax="floatround()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:foreach" syntax="foreach()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:format" syntax="format()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:g_mysql_AccountOnline" syntax="g_mysql_AccountOnline()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:getdate" syntax="getdate()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:gettime" syntax="gettime()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:mysql_function_query" syntax="mysql_function_query()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:printf" syntax="printf()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+		<member name="M:strcpy" syntax="strcpy()">
+			<stacksize value="1"/>
+			<referrer name="OnPlayerLoad"/>
+		</member>
+
+	</members>
+</doc>

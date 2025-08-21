@@ -275,6 +275,7 @@ public OnPlayerLoad(playerid)
 		PlayerInfo[playerid][pVehicleSlot] = 0;
 		PlayerInfo[playerid][pToySlot] = 0;
 		PlayerInfo[playerid][pVehVoucher] = 0;
+		PlayerInfo[playerid][pInventoryData][0] = '\0';
 		PlayerInfo[playerid][pSVIPVoucher] = 0;
 		PlayerInfo[playerid][pGVIPVoucher] = 0;
 		PlayerInfo[playerid][pFallIntoFun] = 0;
@@ -642,6 +643,9 @@ public OnPlayerLoad(playerid)
 	mysql_function_query(MainPipeline, string, true, "LoadRentedCar", "i", playerid);
 
 	if(PlayerInfo[playerid][pFMember] == -1) { PlayerInfo[playerid][pFMember] = INVALID_FAMILY_ID; }
+	
+	// Load player inventory
+	LoadPlayerInventory(playerid);
 	if(PlayerInfo[playerid][pFMember] >= 0 && PlayerInfo[playerid][pFMember] < INVALID_FAMILY_ID)
 	{
 		SendClientMessageEx(playerid, COLOR_WHITE, "Family MOTD's:");

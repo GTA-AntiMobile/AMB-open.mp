@@ -1,6 +1,7 @@
 #include <YSI\YSI_Coding\y_hooks>
 
-#define DIALOG_GIVEGUN 10001
+#define DIALOG_GIVEGUN_CATEGORY 10001
+#define DIALOG_GIVEGUN_LIST 10002
 #define DIALOG_SETSTAT_PLAYER  11001
 #define DIALOG_SETSTAT_MENU    11002
 #define DIALOG_SETSTAT_INPUT   11003
@@ -10,21 +11,168 @@
 #define DIALOG_ADMIN_PANEL_REASON 11006
 #define DIALOG_PLAYER_OUTFIT_MENU 11009
 #define DIALOG_PLAYER_OUTFIT_INPUT 11010
+#define DIALOG_ADMIN_PANEL_SEARCH 11011
 
 #define MAX_PANEL_PLAYERS 4
-new PlayerText:PlayerPanelTD[MAX_PLAYERS][MAX_PANEL_PLAYERS * 3 + 8]; // 8 UI elements + 4 backgrounds + 4 models + 4 names = 20
+new PlayerText:PlayerPanelTD[MAX_PLAYERS][MAX_PANEL_PLAYERS * 3 + 16];
 new bool:PlayerPanelShowing[MAX_PLAYERS];
 new PlayerPanelPage[MAX_PLAYERS];
 new PlayerPanelSelectedPlayer[MAX_PLAYERS];
+new PlayerPanelFilter[MAX_PLAYERS][24];
 
 
-new const WeaponNames[][32] = {
-    "Brass Knuckles", "Golf Club", "Night Stick", "Knife", "Baseball Bat", "Shovel", "Pool Cue", "Katana", "Chainsaw",
-    "Purple Dildo", "Dildo", "Vibrator", "Silver Vibrator", "Flowers", "Cane", "Grenade", "Tear Gas", "Molotov",
-    "Colt 45", "Silenced 9mm", "Desert Eagle", "Shotgun", "Sawn-off", "SPAS-12", "Micro Uzi", "MP5", "AK-47", "M4", "Tec-9",
-    "Country Rifle", "Sniper Rifle", "Rocket Launcher", "Heat Seeking RPG", "Flamethrower", "Minigun", "Satchel Charge", "Detonator",
+new const WeaponCategories[][32] = {
+    "Can chien",
+    "Sung ngan",
+    "Shotgun",
+    "Sung truong",
+    "Sung ban tia",
+    "Vu khi dac biet",
+    "Khac"
+};
+
+new const MeleeWeapons[][32] = {
+    "Brass Knuckles", "Golf Club", "Night Stick", "Knife", "Baseball Bat", 
+    "Shovel", "Pool Cue", "Katana", "Chainsaw"
+};
+new const MeleeWeaponIDs[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+new const PistolWeapons[][32] = {
+    "Colt 45", "Silenced 9mm", "Desert Eagle"
+};
+new const PistolWeaponIDs[] = {22, 23, 24};
+
+new const ShotgunWeapons[][32] = {
+    "Shotgun", "Sawn-off", "SPAS-12"
+};
+new const ShotgunWeaponIDs[] = {25, 26, 27};
+
+new const RifleWeapons[][32] = {
+    "Micro Uzi", "MP5", "AK-47", "M4", "Tec-9", "Country Rifle", "Sniper Rifle"
+};
+new const RifleWeaponIDs[] = {28, 29, 30, 31, 32, 33, 34};
+
+new const HeavyWeapons[][32] = {
+    "Rocket Launcher", "Heat Seeking RPG", "Flamethrower", "Minigun"
+};
+new const HeavyWeaponIDs[] = {35, 36, 37, 38};
+
+new const SpecialWeapons[][32] = {
+    "Grenade", "Tear Gas", "Molotov", "Satchel Charge", "Detonator"
+};
+new const SpecialWeaponIDs[] = {16, 17, 18, 39, 40};
+
+new const OtherWeapons[][32] = {
     "Spray Can", "Fire Extinguisher", "Camera", "Night Vision", "Thermal Vision", "Parachute"
 };
+new const OtherWeaponIDs[] = {41, 42, 43, 44, 45, 46};
+
+new PlayerWeaponCategory[MAX_PLAYERS];
+new PlayerWeaponPage[MAX_PLAYERS];
+
+new PlayerStatPage[MAX_PLAYERS];
+
+stock GetWeaponCategorySize(category)
+{
+    switch(category)
+    {
+        case 0: return sizeof(MeleeWeapons);
+        case 1: return sizeof(PistolWeapons);
+        case 2: return sizeof(ShotgunWeapons);
+        case 3: return sizeof(RifleWeapons);
+        case 4: return sizeof(HeavyWeapons);
+        case 5: return sizeof(SpecialWeapons);
+        case 6: return sizeof(OtherWeapons);
+    }
+    return 0;
+}
+
+stock GetWeaponNameByCategory(category, index, name[], size)
+{
+    switch(category)
+    {
+        case 0: format(name, size, "%s", MeleeWeapons[index]);
+        case 1: format(name, size, "%s", PistolWeapons[index]);
+        case 2: format(name, size, "%s", ShotgunWeapons[index]);
+        case 3: format(name, size, "%s", RifleWeapons[index]);
+        case 4: format(name, size, "%s", HeavyWeapons[index]);
+        case 5: format(name, size, "%s", SpecialWeapons[index]);
+        case 6: format(name, size, "%s", OtherWeapons[index]);
+    }
+}
+
+stock GetWeaponIDByCategory(category, index)
+{
+    switch(category)
+    {
+        case 0: return MeleeWeaponIDs[index];
+        case 1: return PistolWeaponIDs[index];
+        case 2: return ShotgunWeaponIDs[index];
+        case 3: return RifleWeaponIDs[index];
+        case 4: return HeavyWeaponIDs[index];
+        case 5: return SpecialWeaponIDs[index];
+        case 6: return OtherWeaponIDs[index];
+    }
+    return 0;
+}
+
+stock ShowWeaponCategoryDialog(playerid)
+{
+    new dialog[512];
+    dialog[0] = EOS;
+    
+    for(new i = 0; i < sizeof(WeaponCategories); i++)
+    {
+        format(dialog, sizeof(dialog), "%s%s\n", dialog, WeaponCategories[i]);
+    }
+    
+    ShowPlayerDialog(playerid, DIALOG_GIVEGUN_CATEGORY, DIALOG_STYLE_LIST, 
+                    "Chon loai vu khi", dialog, "Chon", "Huy");
+}
+
+stock ShowWeaponListDialog(playerid, category, page = 0)
+{
+    new categorySize = GetWeaponCategorySize(category);
+    if(categorySize == 0) return 0;
+    
+    new maxPages = (categorySize - 1) / 10 + 1; // 10 weapons per page
+    if(page >= maxPages) page = maxPages - 1;
+    if(page < 0) page = 0;
+    
+    PlayerWeaponPage[playerid] = page;
+    
+    new dialog[1024];
+    dialog[0] = EOS;
+    
+    new startIndex = page * 10;
+    new endIndex = startIndex + 10;
+    if(endIndex > categorySize) endIndex = categorySize;
+    
+    for(new i = startIndex; i < endIndex; i++)
+    {
+        new weaponName[32];
+        GetWeaponNameByCategory(category, i, weaponName, sizeof(weaponName));
+        format(dialog, sizeof(dialog), "%s%s\n", dialog, weaponName);
+    }
+    
+    if(maxPages > 1)
+    {
+        format(dialog, sizeof(dialog), "%s{666666}------- NAVIGATION -------\n", dialog);
+        
+        if(page > 0)
+            format(dialog, sizeof(dialog), "%s{FFFF00}< Trang truoc\n", dialog);
+        
+        if(page < maxPages - 1)
+            format(dialog, sizeof(dialog), "%s{FFFF00}Trang tiep >\n", dialog);
+    }
+    
+    new title[64];
+    format(title, sizeof(title), "%s - Trang %d/%d", WeaponCategories[category], page + 1, maxPages);
+    
+    ShowPlayerDialog(playerid, DIALOG_GIVEGUN_LIST, DIALOG_STYLE_LIST, title, dialog, "Chon", "Quay lai");
+    
+    return 1;
+}
 
 new const StatName[][32] = {
     "Level",
@@ -78,43 +226,71 @@ new const StatName[][32] = {
     "Hunger",
     "Hunger",
     "Fitness",
-    "Event Tokens",
-    "Modkit"
+    "Modkit",
+    "Event Tokens"
 };
 
-new const WeaponIDs[] = {
-    1, 2, 3, 4, 5, 6, 7, 8, 9,
-    10, 11, 12, 13, 14, 15, 16, 17, 18,
-    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
-    33, 34, 35, 36, 37, 38, 39, 40,
-    41, 42, 43, 44, 45, 46
-};
 
+stock ShowStatListDialog(playerid, page = 0)
+{
+    new totalStats = sizeof(StatName);
+    new maxPages = (totalStats - 1) / 15 + 1; // 15 stats per page
+    if(page >= maxPages) page = maxPages - 1;
+    if(page < 0) page = 0;
+    
+    PlayerStatPage[playerid] = page;
+    
+    new dialog[2048];
+    dialog[0] = EOS;
+    
+    new startIndex = page * 15;
+    new endIndex = startIndex + 15;
+    if(endIndex > totalStats) endIndex = totalStats;
+    
+    for(new i = startIndex; i < endIndex; i++)
+    {
+        format(dialog, sizeof(dialog), "%s%s\n", dialog, StatName[i]);
+    }
+    
+    if(maxPages > 1)
+    {
+        format(dialog, sizeof(dialog), "%s{666666}------- NAVIGATION -------\n", dialog);
+        
+        if(page > 0)
+            format(dialog, sizeof(dialog), "%s{FFFF00}< Trang truoc\n", dialog);
+        
+        if(page < maxPages - 1)
+            format(dialog, sizeof(dialog), "%s{FFFF00}Trang tiep >\n", dialog);
+    }
+    
+    new title[64];
+    format(title, sizeof(title), "Chon stat de set - Trang %d/%d", page + 1, maxPages);
+    
+    ShowPlayerDialog(playerid, DIALOG_SETSTAT_MENU, DIALOG_STYLE_LIST, title, dialog, "Chon", "Huy");
+    
+    return 1;
+}
 
 CreatePlayerPanelTextDraws(playerid)
 {
-    // Expanded background - Much larger size
     PlayerPanelTD[playerid][0] = CreatePlayerTextDraw(playerid, 10.0, 40.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][0], 620.0, 400.0);
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][0], 1);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][0], 0x000000CC);
     PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][0], 4);
     
-    // Main container - Expanded
     PlayerPanelTD[playerid][1] = CreatePlayerTextDraw(playerid, 15.0, 45.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][1], 610.0, 390.0);
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][1], 1);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][1], 0x1A1A1AFF);
     PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][1], 4);
     
-    // Top accent bar - Full width
     PlayerPanelTD[playerid][2] = CreatePlayerTextDraw(playerid, 15.0, 45.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][2], 610.0, 5.0);
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][2], 1);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][2], 0x4A90E2FF);
     PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][2], 4);
     
-    // Header - Centered in expanded panel
     PlayerPanelTD[playerid][3] = CreatePlayerTextDraw(playerid, 320.0, 58.0, "~b~ADMIN ~w~PLAYER ~y~MANAGEMENT");
     PlayerTextDrawLetterSize(playerid, PlayerPanelTD[playerid][3], 0.320, 1.600);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][3], -1);
@@ -123,8 +299,7 @@ CreatePlayerPanelTextDraws(playerid)
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][3], 2);
     PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][3], 2);
     
-    // Subtitle - Expanded
-    PlayerPanelTD[playerid][4] = CreatePlayerTextDraw(playerid, 320.0, 75.0, "~w~Professional Control • Advanced Features");
+    PlayerPanelTD[playerid][4] = CreatePlayerTextDraw(playerid, 320.0, 75.0, "~w~Professional Control | Advanced Features");
     PlayerTextDrawLetterSize(playerid, PlayerPanelTD[playerid][4], 0.190, 0.850);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][4], 0xCCCCCCFF);
     PlayerTextDrawSetShadow(playerid, PlayerPanelTD[playerid][4], 0);
@@ -132,7 +307,6 @@ CreatePlayerPanelTextDraws(playerid)
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][4], 2);
     PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][4], 1);
     
-    // Close button - Moved to new position
     PlayerPanelTD[playerid][5] = CreatePlayerTextDraw(playerid, 610.0, 58.0, "~r~X");
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][5], 2);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][5], 0xFF4757FF);
@@ -142,28 +316,24 @@ CreatePlayerPanelTextDraws(playerid)
     PlayerTextDrawSetSelectable(playerid, PlayerPanelTD[playerid][5], 1);
     PlayerTextDrawSetShadow(playerid, PlayerPanelTD[playerid][5], 1);
     
-    // Showcase area - Expanded size
     PlayerPanelTD[playerid][6] = CreatePlayerTextDraw(playerid, 25.0, 95.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][6], 590.0, 280.0);
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][6], 1);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][6], 0x222222FF);
     PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][6], 4);
     
-    // Showcase border - Full width
     PlayerPanelTD[playerid][7] = CreatePlayerTextDraw(playerid, 25.0, 95.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][7], 590.0, 2.0);
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][7], 1);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][7], 0x4A90E2FF);
     PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][7], 4);
     
-    // Navigation panel - Expanded width
     PlayerPanelTD[playerid][8] = CreatePlayerTextDraw(playerid, 25.0, 385.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][8], 590.0, 40.0);
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][8], 1);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][8], 0x2A2A2AFF);
     PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][8], 4);
     
-    // Navigation buttons - Repositioned for expanded panel
     PlayerPanelTD[playerid][9] = CreatePlayerTextDraw(playerid, 50.0, 400.0, "~g~PREV");
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][9], 1);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][9], 0x2ED573FF);
@@ -184,8 +354,7 @@ CreatePlayerPanelTextDraws(playerid)
     PlayerTextDrawSetShadow(playerid, PlayerPanelTD[playerid][10], 1);
     PlayerTextDrawSetOutline(playerid, PlayerPanelTD[playerid][10], 0);
     
-    // Page info - Centered in expanded panel
-    PlayerPanelTD[playerid][11] = CreatePlayerTextDraw(playerid, 320.0, 400.0, "~y~PAGE ~w~1~y~/~w~1");
+    PlayerPanelTD[playerid][11] = CreatePlayerTextDraw(playerid, 200.0, 400.0, "~y~PAGE ~w~1~y~/~w~1");
     PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][11], 2);
     PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][11], 0xFFD700FF);
     PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][11], 1);
@@ -193,7 +362,6 @@ CreatePlayerPanelTextDraws(playerid)
     PlayerTextDrawSetShadow(playerid, PlayerPanelTD[playerid][11], 1);
     PlayerTextDrawSetOutline(playerid, PlayerPanelTD[playerid][11], 0);
     
-    // Player slots - Expanded layout with more space
     new Float:startX = 50.0, Float:startY = 120.0;
     new Float:slotWidth = 140.0;
     
@@ -202,7 +370,6 @@ CreatePlayerPanelTextDraws(playerid)
         new Float:x = startX + (i * slotWidth);
         new Float:y = startY;
         
-        // Player preview model - Larger size for expanded panel
         PlayerPanelTD[playerid][12 + i] = CreatePlayerTextDraw(playerid, x, y, "_");
         PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][12 + i], 125.0, 150.0);
         PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][12 + i], -1);
@@ -212,7 +379,6 @@ CreatePlayerPanelTextDraws(playerid)
         PlayerTextDrawSetPreviewModel(playerid, PlayerPanelTD[playerid][12 + i], 26);
         PlayerTextDrawSetPreviewRot(playerid, PlayerPanelTD[playerid][12 + i], -9.0, 0.0, -22.0, 1.0);
         
-        // Player name - Below model, centered with larger text
         PlayerPanelTD[playerid][16 + i] = CreatePlayerTextDraw(playerid, x + 62.5, y + 155.0, "~w~Empty");
         PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][16 + i], 2);
         PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][16 + i], 0xFFFFFFFF);
@@ -222,21 +388,60 @@ CreatePlayerPanelTextDraws(playerid)
         PlayerTextDrawSetOutline(playerid, PlayerPanelTD[playerid][16 + i], 0);
     }
     
-    // Premium accent - Positioned for expanded panel
-    PlayerPanelTD[playerid][19] = CreatePlayerTextDraw(playerid, 320.0, 330.0, "~y~ADMIN CONTROL PANEL");
-    PlayerTextDrawLetterSize(playerid, PlayerPanelTD[playerid][19], 0.24, 1.2);
-    PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][19], 0xFFD700FF);
-    PlayerTextDrawSetShadow(playerid, PlayerPanelTD[playerid][19], 1);
-    PlayerTextDrawSetOutline(playerid, PlayerPanelTD[playerid][19], 0);
-    PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][19], 2);
-    PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][19], 1);
+    PlayerPanelTD[playerid][23] = CreatePlayerTextDraw(playerid, 285.0, 397.5, "LD_BUM:blkdot");
+    PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][23], 70.0, 19.0);
+    PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][23], 1);
+    PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][23], 0x2A2A2AFF);
+    PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][23], 4);
+
+    PlayerPanelTD[playerid][24] = CreatePlayerTextDraw(playerid, 405.0, 397.5, "LD_BUM:blkdot");
+    PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][24], 70.0, 19.0);
+    PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][24], 1);
+    PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][24], 0x2A2A2AFF);
+    PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][24], 4);
     
+    PlayerPanelTD[playerid][20] = CreatePlayerTextDraw(playerid, 320.0, 400.0, "~b~~h~SEARCH");
+    PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][20], 2);
+    PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][20], 0x4A90E2FF);
+    PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][20], 1);
+    PlayerTextDrawLetterSize(playerid, PlayerPanelTD[playerid][20], 0.27, 1.1);
+    PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][20], 70.0, 15.0);
+    PlayerTextDrawSetSelectable(playerid, PlayerPanelTD[playerid][20], 1);
+    PlayerTextDrawSetShadow(playerid, PlayerPanelTD[playerid][20], 1);
+    PlayerTextDrawSetOutline(playerid, PlayerPanelTD[playerid][20], 1);
+
+    PlayerPanelTD[playerid][21] = CreatePlayerTextDraw(playerid, 440.0, 400.0, "~r~~h~CLEAR");
+    PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][21], 2);
+    PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][21], 0xFF4757FF);
+    PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][21], 1);
+    PlayerTextDrawLetterSize(playerid, PlayerPanelTD[playerid][21], 0.27, 1.1);
+    PlayerTextDrawTextSize(playerid, PlayerPanelTD[playerid][21], 70.0, 15.0);
+    PlayerTextDrawSetSelectable(playerid, PlayerPanelTD[playerid][21], 1);
+    PlayerTextDrawSetShadow(playerid, PlayerPanelTD[playerid][21], 1);
+    PlayerTextDrawSetOutline(playerid, PlayerPanelTD[playerid][21], 1);
+
+    PlayerPanelTD[playerid][22] = CreatePlayerTextDraw(playerid, 320.0, 330.0, "~y~ADMIN CONTROL PANEL");
+    PlayerTextDrawLetterSize(playerid, PlayerPanelTD[playerid][22], 0.24, 1.2);
+    PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][22], 0xFFD700FF);
+    PlayerTextDrawSetShadow(playerid, PlayerPanelTD[playerid][22], 1);
+    PlayerTextDrawSetOutline(playerid, PlayerPanelTD[playerid][22], 0);
+    PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][22], 2);
+    PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][22], 1);
+
+    PlayerPanelTD[playerid][25] = CreatePlayerTextDraw(playerid, 600.0, 58.0, "~w~Online: 0 | Filter: ~g~All");
+    PlayerTextDrawAlignment(playerid, PlayerPanelTD[playerid][25], 3);
+    PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][25], 0xCCCCCCFF);
+    PlayerTextDrawFont(playerid, PlayerPanelTD[playerid][25], 1);
+    PlayerTextDrawLetterSize(playerid, PlayerPanelTD[playerid][25], 0.20, 0.9);
+    PlayerTextDrawSetShadow(playerid, PlayerPanelTD[playerid][25], 1);
+    PlayerTextDrawSetOutline(playerid, PlayerPanelTD[playerid][25], 0);
+
     return 1;
 }
 
 DestroyPlayerPanelTextDraws(playerid)
 {
-    for(new i = 0; i < MAX_PANEL_PLAYERS * 3 + 8; i++)
+    for(new i = 0; i < MAX_PANEL_PLAYERS * 3 + 16; i++)
     {
         if(PlayerPanelTD[playerid][i] != PlayerText:INVALID_TEXT_DRAW)
         {
@@ -250,12 +455,20 @@ DestroyPlayerPanelTextDraws(playerid)
 UpdatePlayerPanelData(playerid)
 {
     new count = 0;
+    new totalOnline = 0;
     new playerList[MAX_PLAYERS];
     
     for(new i = 0; i < MAX_PLAYERS; i++)
     {
         if(IsPlayerConnected(i))
         {
+            totalOnline++;
+            if(PlayerPanelFilter[playerid][0])
+            {
+                new pname[MAX_PLAYER_NAME];
+                GetPlayerName(i, pname, sizeof(pname));
+                if(strfind(pname, PlayerPanelFilter[playerid], true) == -1) continue;
+            }
             playerList[count] = i;
             count++;
         }
@@ -269,6 +482,12 @@ UpdatePlayerPanelData(playerid)
     new pageInfo[48];
     format(pageInfo, sizeof(pageInfo), "~y~PAGE ~w~%d~y~/~w~%d", PlayerPanelPage[playerid] + 1, totalPages);
     PlayerTextDrawSetString(playerid, PlayerPanelTD[playerid][11], pageInfo);
+    new status[96];
+    if(PlayerPanelFilter[playerid][0])
+        format(status, sizeof(status), "~w~Online: %d | Filter: ~b~%s", totalOnline, PlayerPanelFilter[playerid]);
+    else
+        format(status, sizeof(status), "~w~Online: %d | Filter: ~g~All", totalOnline);
+    PlayerTextDrawSetString(playerid, PlayerPanelTD[playerid][25], status);
     
     for(new i = 0; i < MAX_PANEL_PLAYERS; i++)
     {
@@ -310,13 +529,19 @@ ShowPlayerPanel(playerid)
     PlayerPanelPage[playerid] = 0;
     PlayerPanelShowing[playerid] = true;
     
+    PlayerPanelFilter[playerid][0] = '\0';
     UpdatePlayerPanelData(playerid);
     
     for(new i = 0; i < 12; i++)
     {
         PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][i]);
     }
-    PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][19]); // Premium accent
+    PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][23]);
+    PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][24]);
+    PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][20]);
+    PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][21]);
+    PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][22]);
+    PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][25]);
     
     SelectTextDraw(playerid, 0x00FF00FF);
     return 1;
@@ -381,40 +606,6 @@ CMD:playerpanel(playerid, params[])
     return ShowPlayerPanel(playerid);
 }
 
-CMD:panel(playerid, params[])
-{
-    if(PlayerInfo[playerid][pAdmin] < 1337)
-        return SendClientMessage(playerid, COLOR_GRAD1, "Ban khong duoc phep su dung lenh nay.");
-
-    new playerList[2048];
-    new count = 0;
-    
-    for(new i = 0; i < MAX_PLAYERS; i++)
-    {
-        if(IsPlayerConnected(i))
-        {
-            new playerName[MAX_PLAYER_NAME];
-            GetPlayerName(i, playerName, sizeof(playerName));
-            new Float:health, Float:armour;
-            GetPlayerHealth(i, health);
-            GetPlayerArmour(i, armour);
-            
-            format(playerList, sizeof(playerList), "%s%s (ID: %d) | HP: %.0f | Armor: %.0f\n", 
-                playerList, playerName, i, health, armour);
-            count++;
-        }
-    }
-    
-    if(count == 0)
-    {
-        return SendClientMessage(playerid, COLOR_GRAD1, "Khong co nguoi choi nao online.");
-    }
-    
-    new title[64];
-    format(title, sizeof(title), "Nguoi choi online (%d)", count);
-    ShowPlayerDialog(playerid, DIALOG_ADMIN_PANEL_PLAYERS, DIALOG_STYLE_LIST, title, playerList, "Chon", "Dong");
-    return 1;
-}
 
 CMD:setstat(playerid, params[])
 {
@@ -442,31 +633,22 @@ CMD:givegun(playerid, params[])
         if(!IsPlayerConnected(targetid)) return SendClientMessage(playerid, -1, "Nguoi choi khong hop le.");
 
         SetPVarInt(playerid, "GiveGunTarget", targetid);
-
-        new list[1024];
-        for(new i = 0; i < sizeof(WeaponNames); i++)
-        {
-            format(list, sizeof(list), "%s%s\n", list, WeaponNames[i]);
-        }
-        ShowPlayerDialog(playerid, DIALOG_GIVEGUN, DIALOG_STYLE_LIST, "> Give Weapon", list, "Select", "Cancel");
+        ShowWeaponCategoryDialog(playerid);
         return 1;
     }
     return 1;
 }
 
-// TextDraw Click Handler
 hook OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid)
 {
     if(!PlayerPanelShowing[playerid]) return 0;
     
-    // Close button
     if(playertextid == PlayerPanelTD[playerid][5])
     {
         HidePlayerPanel(playerid);
         return 1;
     }
     
-    // Previous page button
     if(playertextid == PlayerPanelTD[playerid][9])
     {
         if(PlayerPanelPage[playerid] > 0)
@@ -477,7 +659,6 @@ hook OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid)
         return 1;
     }
     
-    // Next page button
     if(playertextid == PlayerPanelTD[playerid][10])
     {
         new count = 0;
@@ -494,8 +675,25 @@ hook OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid)
         }
         return 1;
     }
+
+    if(playertextid == PlayerPanelTD[playerid][20])
+    {
+        ShowPlayerDialog(playerid, DIALOG_ADMIN_PANEL_SEARCH, DIALOG_STYLE_INPUT, "> Find Player", "Nhap ten (mot phan) de loc danh sach online.", "Loc", "Dong");
+        PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][20], 0x6AB0FFFF);
+        PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][20]);
+        return 1;
+    }
+
+    if(playertextid == PlayerPanelTD[playerid][21])
+    {
+        PlayerPanelFilter[playerid][0] = '\0';
+        PlayerPanelPage[playerid] = 0;
+        UpdatePlayerPanelData(playerid);
+        PlayerTextDrawColor(playerid, PlayerPanelTD[playerid][21], 0xFF6777FF);
+        PlayerTextDrawShow(playerid, PlayerPanelTD[playerid][21]);
+        return 1;
+    }
     
-    // Player slots - Preview models
     for(new i = 0; i < MAX_PANEL_PLAYERS; i++)
     {
         if(playertextid == PlayerPanelTD[playerid][12 + i])
@@ -515,32 +713,102 @@ hook OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid)
 
 hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 {
-    if(dialogid == DIALOG_GIVEGUN && response)
+    if(dialogid == DIALOG_ADMIN_PANEL_SEARCH)
+    {
+        if(response)
+        {
+            if(strlen(inputtext) > 0)
+            {
+                format(PlayerPanelFilter[playerid], sizeof(PlayerPanelFilter[]), "%s", inputtext);
+            }
+            else PlayerPanelFilter[playerid][0] = '\0';
+            PlayerPanelPage[playerid] = 0;
+            UpdatePlayerPanelData(playerid);
+        }
+        return 1;
+    }
+    if(dialogid == DIALOG_GIVEGUN_CATEGORY && response)
+    {
+        PlayerWeaponCategory[playerid] = listitem;
+        PlayerWeaponPage[playerid] = 0;
+        ShowWeaponListDialog(playerid, listitem, 0);
+        return 1;
+    }
+    
+    if(dialogid == DIALOG_GIVEGUN_LIST && response)
     {
         new targetid = GetPVarInt(playerid, "GiveGunTarget");
         if(!IsPlayerConnected(targetid)) {
             SendClientMessage(playerid, -1, "Nguoi choi khong hop le.");
             return 1;
         }
-        if(listitem < 0 || listitem >= sizeof(WeaponIDs)) return 1;
-        new weaponid = WeaponIDs[listitem];
-
-        for(new slot = 0; slot < 12; slot++)
+        
+        new category = PlayerWeaponCategory[playerid];
+        new page = PlayerWeaponPage[playerid];
+        new categorySize = GetWeaponCategorySize(category);
+        new maxPages = (categorySize - 1) / 10 + 1;
+        
+        new startIndex = page * 10;
+        new weaponsOnPage = categorySize - startIndex;
+        if(weaponsOnPage > 10) weaponsOnPage = 10;
+        
+        if(maxPages > 1)
         {
-            new wid, ammo;
-            GetPlayerWeaponData(targetid, slot, wid, ammo);
-            if(wid == weaponid)
+            new navigationStart = weaponsOnPage + 1; // +1 for separator
+            
+            if(page > 0 && listitem == navigationStart)
             {
-                new msg[128];
-                format(msg, sizeof(msg), "Nguoi choi %s da co vu khi %s roi!", GetPlayerNameEx(targetid), WeaponNames[listitem]);
-                SendClientMessage(playerid, 0xFF0000FF, msg);
+                ShowWeaponListDialog(playerid, category, page - 1);
+                return 1;
+            }
+            
+            new nextPageIndex = navigationStart;
+            if(page > 0) nextPageIndex++; 
+            
+            if(page < maxPages - 1 && listitem == nextPageIndex)
+            {
+                ShowWeaponListDialog(playerid, category, page + 1);
                 return 1;
             }
         }
-        GivePlayerWeapon(targetid, weaponid, 100);
-        new msg[128];
-        format(msg, sizeof(msg), "[ADMIN GIVEGUN] Ban da cap vu khi %s cho %s.", WeaponNames[listitem], GetPlayerNameEx(targetid));
-        SendClientMessage(playerid, COLOR_LIGHTRED, msg);
+        
+        if(listitem < weaponsOnPage)
+        {
+            new weaponIndex = startIndex + listitem;
+            new weaponid = GetWeaponIDByCategory(category, weaponIndex);
+            
+            if(weaponid == 0) return 1;
+            
+            for(new slot = 0; slot < 13; slot++)
+            {
+                new wid, ammo;
+                GetPlayerWeaponData(targetid, slot, wid, ammo);
+                if(wid == weaponid)
+                {
+                    new weaponName[32];
+                    GetWeaponNameByCategory(category, weaponIndex, weaponName, sizeof(weaponName));
+                    new msg[128];
+                    format(msg, sizeof(msg), "Nguoi choi %s da co vu khi %s roi!", GetPlayerNameEx(targetid), weaponName);
+                    SendClientMessage(playerid, 0xFF0000FF, msg);
+                    return 1;
+                }
+            }
+            
+            GivePlayerWeapon(targetid, weaponid, 100);
+            
+            new weaponName[32];
+            GetWeaponNameByCategory(category, weaponIndex, weaponName, sizeof(weaponName));
+            new msg[128];
+            format(msg, sizeof(msg), "[ADMIN GIVEGUN] Ban da cap vu khi %s cho %s.", weaponName, GetPlayerNameEx(targetid));
+            SendClientMessage(playerid, COLOR_LIGHTRED, msg);
+        }
+        
+        return 1;
+    }
+    
+    if(dialogid == DIALOG_GIVEGUN_LIST && !response)
+    {
+        ShowWeaponCategoryDialog(playerid);
         return 1;
     }
     if(dialogid == DIALOG_SETSTAT_PLAYER && response)
@@ -558,23 +826,52 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
             return SendClientMessage(playerid, -1, "Khong tim thay nguoi choi.");
         SetPVarInt(playerid, "SetStatTarget", targetid);
 
-        new statlist[2048];
-        statlist[0] = EOS;
-        for(new i = 0; i < sizeof(StatName); i++)
-        {
-            format(statlist, sizeof(statlist), "%s%s\n", statlist, StatName[i]);
-        }
-        ShowPlayerDialog(playerid, DIALOG_SETSTAT_MENU, DIALOG_STYLE_LIST, "Chon stat de set", statlist, "Chon", "Huy");
+        PlayerStatPage[playerid] = 0;
+        ShowStatListDialog(playerid, 0);
         return 1;
     }
     if(dialogid == DIALOG_SETSTAT_MENU && response)
     {
-        SetPVarInt(playerid, "SetStatType", listitem);
-        new statname[32];
-        format(statname, sizeof(statname), "%s", StatName[listitem]);
-        new caption[64];
-        format(caption, sizeof(caption), "Nhap gia tri moi cho %s", statname);
-        ShowPlayerDialog(playerid, DIALOG_SETSTAT_INPUT, DIALOG_STYLE_INPUT, caption, "Nhap gia tri:", "Xac nhan", "Huy");
+        new page = PlayerStatPage[playerid];
+        new totalStats = sizeof(StatName);
+        new maxPages = (totalStats - 1) / 15 + 1;
+        
+        new startIndex = page * 15;
+        new statsOnPage = totalStats - startIndex;
+        if(statsOnPage > 15) statsOnPage = 15;
+        
+        if(maxPages > 1)
+        {
+            new navigationStart = statsOnPage + 1; // +1 for separator
+            
+            if(page > 0 && listitem == navigationStart)
+            {
+                ShowStatListDialog(playerid, page - 1);
+                return 1;
+            }
+            
+            new nextPageIndex = navigationStart;
+            if(page > 0) nextPageIndex++; // If prev exists, next is one more
+            
+            if(page < maxPages - 1 && listitem == nextPageIndex)
+            {
+                ShowStatListDialog(playerid, page + 1);
+                return 1;
+            }
+        }
+        
+        if(listitem < statsOnPage)
+        {
+            new statIndex = startIndex + listitem;
+            SetPVarInt(playerid, "SetStatType", statIndex);
+            
+            new statname[32];
+            format(statname, sizeof(statname), "%s", StatName[statIndex]);
+            new caption[64];
+            format(caption, sizeof(caption), "Nhap gia tri moi cho %s", statname);
+            ShowPlayerDialog(playerid, DIALOG_SETSTAT_INPUT, DIALOG_STYLE_INPUT, caption, "Nhap gia tri:", "Xac nhan", "Huy");
+        }
+        
         return 1;
     }
     if(dialogid == DIALOG_SETSTAT_INPUT && response)
@@ -824,23 +1121,13 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
             case 4: // Set Stat
             {
                 SetPVarInt(playerid, "SetStatTarget", targetid);
-                new statlist[2048];
-                statlist[0] = EOS;
-                for(new i = 0; i < sizeof(StatName); i++)
-                {
-                    format(statlist, sizeof(statlist), "%s%s\n", statlist, StatName[i]);
-                }
-                ShowPlayerDialog(playerid, DIALOG_SETSTAT_MENU, DIALOG_STYLE_LIST, "Chon stat de set", statlist, "Chon", "Huy");
+                PlayerStatPage[playerid] = 0;
+                ShowStatListDialog(playerid, 0);
             }
             case 5: // Give Weapon
             {
                 SetPVarInt(playerid, "GiveGunTarget", targetid);
-                new list[1024];
-                for(new i = 0; i < sizeof(WeaponNames); i++)
-                {
-                    format(list, sizeof(list), "%s%s\n", list, WeaponNames[i]);
-                }
-                ShowPlayerDialog(playerid, DIALOG_GIVEGUN, DIALOG_STYLE_LIST, "> Give Weapon", list, "Select", "Cancel");
+                ShowWeaponCategoryDialog(playerid);
             }
             case 6: // Teleport đến
             {
@@ -906,7 +1193,6 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         return 1;
     }
     
-    // Player Management Menu
     if(dialogid == DIALOG_PLAYER_OUTFIT_MENU && response)
     {
         new targetid = PlayerPanelSelectedPlayer[playerid];
@@ -954,23 +1240,13 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
             case 1: // Give Weapon
             {
                 SetPVarInt(playerid, "GiveGunTarget", targetid);
-                new list[1024];
-                for(new i = 0; i < sizeof(WeaponNames); i++)
-                {
-                    format(list, sizeof(list), "%s%s\n", list, WeaponNames[i]);
-                }
-                ShowPlayerDialog(playerid, DIALOG_GIVEGUN, DIALOG_STYLE_LIST, "> Give Weapon", list, "Select", "Cancel");
+                ShowWeaponCategoryDialog(playerid);
             }
             case 2: // Set Stats
             {
                 SetPVarInt(playerid, "SetStatTarget", targetid);
-                new statlist[2048];
-                statlist[0] = EOS;
-                for(new i = 0; i < sizeof(StatName); i++)
-                {
-                    format(statlist, sizeof(statlist), "%s%s\n", statlist, StatName[i]);
-                }
-                ShowPlayerDialog(playerid, DIALOG_SETSTAT_MENU, DIALOG_STYLE_LIST, "Chon stat de set", statlist, "Chon", "Huy");
+                PlayerStatPage[playerid] = 0;
+                ShowStatListDialog(playerid, 0);
             }
             case 3: // Heal
             {
@@ -1069,7 +1345,6 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         return 1;
     }
     
-    // Set Money Input
     if(dialogid == DIALOG_PLAYER_OUTFIT_INPUT && response)
     {
         new targetid = GetPVarInt(playerid, "MoneyTarget");
@@ -1117,7 +1392,7 @@ hook OnPlayerConnect(playerid)
     PlayerPanelPage[playerid] = 0;
     PlayerPanelSelectedPlayer[playerid] = INVALID_PLAYER_ID;
     
-    for(new i = 0; i < MAX_PANEL_PLAYERS * 3 + 8; i++)
+    for(new i = 0; i < MAX_PANEL_PLAYERS * 3 + 12; i++)
     {
         PlayerPanelTD[playerid][i] = PlayerText:INVALID_TEXT_DRAW;
     }

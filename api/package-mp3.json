@@ -1,0 +1,20 @@
+{
+  "name": "amb-youtube-to-mp3",
+  "version": "1.0.0",
+  "description": "YouTube to MP3 converter for AMB Server",
+  "main": "youtube-to-mp3.js",
+  "scripts": {
+    "start": "node youtube-to-mp3.js",
+    "dev": "nodemon youtube-to-mp3.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["youtube", "mp3", "converter", "samp", "music"],
+  "author": "AMB Server",
+  "license": "MIT"
+}

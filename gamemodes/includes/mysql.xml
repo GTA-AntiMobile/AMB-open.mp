@@ -18,6 +18,7 @@
 			<referrer name="mysql_function_query_internal"/>
 			<referrer name="OnQueryFinish"/>
 			<referrer name="MySQLUpdateFinish"/>
+			<referrer name="OnQueryCreateVehicle"/>
 			<referrer name="CheckAccounts"/>
 			<referrer name="SaveHGBackpack"/>
 		</member>
@@ -460,6 +461,15 @@
 			<attribute name="public"/>
 			<stacksize value="3"/>
 			<dependency name="InitiateGamemode"/>
+		</member>
+		<member name="M:DelayedSaveVehicle" syntax="DelayedSaveVehicle(playerid, playervehicleid)">
+			<attribute name="public"/>
+			<stacksize value="5"/>
+			<dependency name="g_mysql_SaveVehicle"/>
+			<param name="playerid">
+			</param>
+			<param name="playervehicleid">
+			</param>
 		</member>
 		<member name="M:DeleteFlag" syntax="DeleteFlag(flagid, adminid)">
 			<stacksize value="88"/>
@@ -1971,7 +1981,7 @@
 		</member>
 		<member name="M:OnLoadFamilies" syntax="OnLoadFamilies()">
 			<attribute name="public"/>
-			<stacksize value="213"/>
+			<stacksize value="1451"/>
 			<dependency name="CreateDynamic3DTextLabel"/>
 			<dependency name="CreateDynamicPickup"/>
 			<dependency name="FamilyMemberCount"/>
@@ -1980,6 +1990,7 @@
 			<dependency name="floatstr"/>
 			<dependency name="format"/>
 			<dependency name="strcmp"/>
+			<dependency name="strlen"/>
 			<dependency name="strval"/>
 			<dependency name="true"/>
 		</member>
@@ -2278,24 +2289,12 @@
 			<param name="extraid">
 			</param>
 		</member>
-		<member name="M:OnQueryCreateToy" syntax="OnQueryCreateToy(playerid, toyslot)">
-			<attribute name="public"/>
-			<stacksize value="136"/>
-			<dependency name="format"/>
-			<dependency name="g_mysql_SaveToys"/>
-			<dependency name="mysql_insert_id"/>
-			<dependency name="mysql_pquery"/>
-			<dependency name="printf"/>
-			<param name="playerid">
-			</param>
-			<param name="toyslot">
-			</param>
-		</member>
 		<member name="M:OnQueryCreateVehicle" syntax="OnQueryCreateVehicle(playerid, playervehicleid)">
 			<attribute name="public"/>
-			<stacksize value="136"/>
+			<stacksize value="137"/>
+			<dependency name="SetTimerEx"/>
+			<dependency name="false"/>
 			<dependency name="format"/>
-			<dependency name="g_mysql_SaveVehicle"/>
 			<dependency name="mysql_insert_id"/>
 			<dependency name="mysql_pquery"/>
 			<dependency name="printf"/>
@@ -3327,6 +3326,7 @@
 			<stacksize value="1"/>
 			<referrer name="OnQueryFinish"/>
 			<referrer name="AuctionLoadQuery"/>
+			<referrer name="OnQueryCreateVehicle"/>
 			<referrer name="CheckAccounts"/>
 			<referrer name="OnLoadPoints"/>
 		</member>
@@ -3947,7 +3947,6 @@
 			<referrer name="OnQueryCreateVehicle"/>
 			<referrer name="CheckAccounts"/>
 			<referrer name="ReferralSecurity"/>
-			<referrer name="OnQueryCreateToy"/>
 			<referrer name="OnStaffAccountCheck"/>
 			<referrer name="LoadRelayForLifeTeam"/>
 			<referrer name="SaveRelayForLifeTeam"/>
@@ -4038,7 +4037,7 @@
 			<dependency name="mysql_close"/>
 		</member>
 		<member name="M:g_mysql_Init" syntax="g_mysql_Init()">
-			<stacksize value="714"/>
+			<stacksize value="717"/>
 			<dependency name="SendRconCommand"/>
 			<dependency name="SetTimer"/>
 			<dependency name="false"/>
@@ -4050,7 +4049,9 @@
 			<dependency name="mysql_connect"/>
 			<dependency name="mysql_errno"/>
 			<dependency name="mysql_global_options"/>
+			<dependency name="mysql_init_options"/>
 			<dependency name="mysql_log"/>
+			<dependency name="mysql_set_option"/>
 			<dependency name="print"/>
 			<dependency name="printf"/>
 			<dependency name="true"/>
@@ -4175,7 +4176,6 @@
 		</member>
 		<member name="M:g_mysql_SaveToys" syntax="g_mysql_SaveToys(playerid, slotid)">
 			<stacksize value="2057"/>
-			<referrer name="OnQueryCreateToy"/>
 			<dependency name="format"/>
 			<dependency name="mysql_pquery"/>
 			<param name="playerid">
@@ -4185,7 +4185,7 @@
 		</member>
 		<member name="M:g_mysql_SaveVehicle" syntax="g_mysql_SaveVehicle(playerid, slotid)">
 			<stacksize value="2314"/>
-			<referrer name="OnQueryCreateVehicle"/>
+			<referrer name="DelayedSaveVehicle"/>
 			<dependency name="GetPlayerNameEx"/>
 			<dependency name="Log"/>
 			<dependency name="format"/>
@@ -4312,11 +4312,14 @@
 			<stacksize value="1"/>
 			<referrer name="g_mysql_Init"/>
 		</member>
+		<member name="M:mysql_init_options" syntax="mysql_init_options()">
+			<stacksize value="1"/>
+			<referrer name="g_mysql_Init"/>
+		</member>
 		<member name="M:mysql_insert_id" syntax="mysql_insert_id(handle)">
 			<stacksize value="3"/>
 			<referrer name="OnNewSpeedCamera"/>
 			<referrer name="OnQueryCreateVehicle"/>
-			<referrer name="OnQueryCreateToy"/>
 			<dependency name="cache_insert_id"/>
 			<param name="handle">
 				<paraminfo>MySQL </paraminfo>
@@ -4468,7 +4471,6 @@
 			<referrer name="ReturnMoney"/>
 			<referrer name="OnQueryCreateVehicle"/>
 			<referrer name="CheckAccounts"/>
-			<referrer name="OnQueryCreateToy"/>
 			<referrer name="LoadRelayForLifeTeam"/>
 			<referrer name="LoadRelayForLifeTeams"/>
 			<referrer name="SaveRelayForLifeTeam"/>
@@ -4505,6 +4507,10 @@
 			</param>
 			<param name="max_len">
 			</param>
+		</member>
+		<member name="M:mysql_set_option" syntax="mysql_set_option()">
+			<stacksize value="1"/>
+			<referrer name="g_mysql_Init"/>
 		</member>
 		<member name="M:number_format" syntax="number_format()">
 			<stacksize value="1"/>
@@ -4576,7 +4582,6 @@
 			<referrer name="BusinessesLoadQueryFinish"/>
 			<referrer name="ReturnMoney"/>
 			<referrer name="OnQueryCreateVehicle"/>
-			<referrer name="OnQueryCreateToy"/>
 			<referrer name="LoadRelayForLifeTeams"/>
 			<referrer name="OnLoadRFLTeams"/>
 			<referrer name="OnLoadPoints"/>
@@ -4638,6 +4643,7 @@
 			<referrer name="MySQLUpdateBuild"/>
 			<referrer name="MailsQueryFinish"/>
 			<referrer name="MailDetailsQueryFinish"/>
+			<referrer name="OnLoadFamilies"/>
 			<referrer name="OnSetMyName"/>
 			<referrer name="OnSetName"/>
 			<referrer name="OnApproveName"/>

@@ -3501,6 +3501,15 @@ public OnPlayerDisconnect(playerid, reason)
 		pSpeed[playerid] = 0.0;
 		SetPVarInt(playerid, "PlayerOwnASurf", 0);
 	}
+	// Cleanup death timer
+	if(PlayerDeathTimer[playerid] != 0)
+	{
+	    KillTimer(PlayerDeathTimer[playerid]);
+	    PlayerDeathTimer[playerid] = 0;
+	}
+	PlayerDeathTimeLeft[playerid] = 0;
+	PlayerBeingRevived[playerid] = false;
+	
 	DeletePVar(playerid, "pTmpEmail");
 	DeletePVar(playerid, "NullEmail");
 	DeletePVar(playerid, "ViewedPMOTD");
@@ -5217,31 +5226,10 @@ public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 			format(name, sizeof(name), "{FF0000}%s", GetPlayerNameEx(GetPlayerTargetPlayer(playerid)));
 			SetPVarString(playerid, "pInteractName", name);
 			SetPVarInt(playerid, "pInteractID", GetPlayerTargetPlayer(playerid));
-            format(string, sizeof(string), "Pay\nGive\n");
-            /*if (PlayerInfo[playerid][pJob] == 9 || PlayerInfo[playerid][pJob2] == 9)
-			{
-			    format(string, sizeof(string), "%sSell Gun\n", string);
-			}
-			if(PlayerInfo[playerid][pJob] == 9 || PlayerInfo[playerid][pJob2] == 9 || PlayerInfo[playerid][pJob] == 18 || PlayerInfo[playerid][pJob2] == 18)
-			{
-			    format(string, sizeof(string), "%sSell Mats\n", string);
-			}
-			if(PlayerInfo[playerid][pJob] == 4 || PlayerInfo[playerid][pJob2] == 4)
-			{
-			    format(string, sizeof(string), "%sSell Pot\nSell Crack\n", string);
-			}
-			if(PlayerInfo[playerid][pJob] == 8 || PlayerInfo[playerid][pJob2] == 8)
-			{
-			    format(string, sizeof(string), "%sGuard\n", string);
-			}
-			if(PlayerInfo[playerid][pJob] == 19 || PlayerInfo[playerid][pJob2] == 19)
-			{
-			    format(string, sizeof(string), "%sSell Drink\n", string);
-			}*/
-			ShowPlayerDialog(playerid, INTERACTMAIN, DIALOG_STYLE_LIST, name, string, "Lua chont", "Huy bo");
+            format(string, sizeof(string), "Pay\nGive\nChia se so dien thoai\n");
+			ShowPlayerDialog(playerid, INTERACTMAIN, DIALOG_STYLE_LIST, name, string, "Lua chon", "Huy bo");
         }
     }
-	// If the client clicked the fire key and is currently injured
 	else if((newkeys && KEY_FIRE) && GetPVarInt(playerid, "Injured") == 1)
 	{
 		ClearAnimations(playerid);
@@ -6635,7 +6623,7 @@ public OnPlayerText(playerid, text[])
 	}
 	if(Mobile[playerid] != INVALID_PLAYER_ID)
 	{
-		format(string, sizeof(string), "(cellphone) %s noi: %s", GetPlayerNameEx(playerid), text);
+		format(string, sizeof(string), "(DIEN THOAI) %s noi: %s", GetPlayerNameEx(playerid), text);
 		ProxDetector(20.0, playerid, string,COLOR_FADE1,COLOR_FADE2,COLOR_FADE3,COLOR_FADE4,COLOR_FADE5);
 		if(IsPlayerConnected(Mobile[playerid]))
 		{

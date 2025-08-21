@@ -10439,10 +10439,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			 	    foreach(new i: Player)
 					{
 						if(GetPlayerVehicleID(i) != 0 && GetPlayerVehicleID(i) == GetPlayerVehicleID(playerid)) {
-							//PlayAudioStreamForPlayerEx(i, "http://shoutcast.ng-gaming.net:8000/listen.pls?sid=1");
 						}
 				  	}
-				  	//format(stationidv[GetPlayerVehicleID(playerid)], 64, "%s", "http://shoutcast.ng-gaming.net:8000/listen.pls?sid=1");
 				  	format(string, sizeof(string), "* %s thay doi dai phat thanh.", GetPlayerNameEx(playerid), string);
 					ProxDetector(10.0, playerid, string, COLOR_PURPLE,COLOR_PURPLE,COLOR_PURPLE,COLOR_PURPLE,COLOR_PURPLE);
 				}
@@ -10452,15 +10450,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					{
 						if(IsPlayerInDynamicArea(i, GetPVarInt(playerid, "pBoomBoxArea")))
 						{
-							//PlayAudioStreamForPlayerEx(i, "http://shoutcast.ng-gaming.net:8000/listen.pls?sid=1", GetPVarFloat(playerid, "pBoomBoxX"), GetPVarFloat(playerid, "pBoomBoxY"), GetPVarFloat(playerid, "pBoomBoxZ"), 30.0, 1);
 				  		}
 				  	}
-			  		//SetPVarString(playerid, "pBoomBoxStation", "http://shoutcast.ng-gaming.net:8000/listen.pls?sid=1");
-				}
-				else
-				{
-				   // PlayAudioStreamForPlayerEx(playerid, "http://shoutcast.ng-gaming.net:8000/listen.pls?sid=1");
-				   // SetPVarInt(playerid, "MusicIRadio", 1);
 				}
 			}
 			else if(listitem == 4)
@@ -10486,12 +10477,6 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 						//	PlayAudioStreamForPlayerEx(i, "http://nick.ng-gaming.net:8000/listen.pls", GetPVarFloat(playerid, "pBoomBoxX"), GetPVarFloat(playerid, "pBoomBoxY"), GetPVarFloat(playerid, "pBoomBoxZ"), 30.0, 1);
 				  		}
 				  	}
-			  	//	SetPVarString(playerid, "pBoomBoxStation", "http://nick.ng-gaming.net:8000/listen.pls");
-				}
-				else
-				{
-				//    PlayAudioStreamForPlayerEx(playerid, "http://nick.ng-gaming.net:8000/listen.pls");
-				 //   SetPVarInt(playerid, "MusicIRadio", 1);
 				}
 			}
 			else if(listitem == 5)
@@ -10788,6 +10773,30 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		    {
                 ShowPlayerDialog(playerid, INTERACTGIVE, DIALOG_STYLE_LIST, name, "Pot\nCrack\nMaterials\nFirework", "Lua chon", "Huy bo");
 		    }
+		    else if(listitem == 2) // Chia se so dien thoai
+		    {
+		        new targetid = GetPVarInt(playerid, "pInteractID");
+		        if(IsPlayerConnected(targetid))
+		        {
+		            new targetName[MAX_PLAYER_NAME], senderPhone[16];
+		            GetPlayerName(targetid, targetName, sizeof(targetName));
+		            format(senderPhone, sizeof(senderPhone), "%d", PlayerInfo[playerid][pPnumber]);
+		            
+		            new confirmString[128];
+		            format(confirmString, sizeof(confirmString), 
+		                "Ban co muon chia se so dien thoai (%s) cho %s khong?", senderPhone, targetName);
+		            
+		            SetPVarInt(playerid, "ShareTarget", targetid);
+		            
+		            ShowPlayerDialog(playerid, DIALOG_PHONE_SHARE_CONFIRM, DIALOG_STYLE_MSGBOX, 
+		                "Chia Se So Dien Thoai", confirmString, "Chia se", "Huy");
+		        }
+		        else
+		        {
+		            DeletePVar(playerid, "pInteractName");
+		            DeletePVar(playerid, "pInteractID");
+		        }
+		    }
 		}
 		else
 		{
@@ -10849,6 +10858,18 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		    DeletePVar(playerid, "pInteractID");
 		    DeletePVar(playerid, "pInteractGive");
 		}
+	}
+	else if(dialogid == DIALOG_PHONE_SHARE_CONFIRM)
+	{
+	    if(response)
+	    {
+	        new targetid = GetPVarInt(playerid, "ShareTarget");
+	        CallRemoteFunction("DoSharePhoneNumber", "ii", playerid, targetid);
+	    }
+	    else {
+	        SendClientMessageEx(playerid, 0xFFFFFFFF, "Da huy chia se so dien thoai.");
+	    }
+	    DeletePVar(playerid, "ShareTarget");
 	}
 	else if(dialogid == DMRCONFIRM)
 	{
