@@ -90,6 +90,8 @@
 #include "./includes/textdraws.pwn"
 #include "./includes/streamer.pwn"
 #include "./includes/OnDialogResponse.pwn"
+/*================== Vehicle Systems ==================*/
+#include "./includes/core/vehicle/cv.pwn"
 #include "./includes/commands.pwn"
 
 /*================== Core Modules ==================*/
@@ -116,7 +118,6 @@
 #include "./includes/core/vehicle/dealership.pwn"
 #include "./includes/core/vehicle/speedo.pwn"
 /*================== Eric Systems ==================*/
-#include "./includes/core/vehicle/cv.pwn"
 main() {}
 
 public OnGameModeInit()
@@ -129,6 +130,9 @@ public OnGameModeInit()
     print("|____________________________________________|");
     
     SetCrashDetectLongCallTime(60000000);
+    
+    // Initialize Custom Vehicle System
+    InitCustomVehicleSystem();
     
     SetTimer("LoadCustomModels", 100, false);
     
@@ -151,13 +155,12 @@ public LoadCustomModels()
     AddSimpleModel(-1, 19379, -2001, "/Server/object.dff", "/Server/LoginPanel.txd");
     AddSimpleModel(-1, 19379, -2003, "/Server/object.dff", "/Server/GPS.txd");
 
-
     AddCharModel(2, 20001, "/skin/dylan.dff", "/skin/dylan.txd");
     AddCharModel(155, 20002, "/skin/brian.dff", "/skin/brian.txd");
-	AddCharModel(280, 20003, "/skin/lapd1.dff", "/skin/lapd1.txd");
- 	AddCharModel(287, 20004, "/skin/conmemay.dff", "/skin/conmemay.txd");
-	//army
-	AddCharModel(287, 20005, "/skin/army/army1.dff", "/skin/army/army1.txd");
+    AddCharModel(280, 20003, "/skin/lapd1.dff", "/skin/lapd1.txd");
+    AddCharModel(287, 20004, "/skin/conmemay.dff", "/skin/conmemay.txd");
+    //army
+    AddCharModel(287, 20005, "/skin/army/army1.dff", "/skin/army/army1.txd");
     AddCharModel(286, 20006, "/skin/army/fbi1.dff", "/skin/army/fbi1.txd");
     AddCharModel(277, 20007, "/skin/army/lafd1-1.dff", "/skin/army/lafd1-1.txd");
     AddCharModel(280, 20008, "/skin/army/lapd1-1.dff", "/skin/army/lapd1-1.txd");
@@ -167,6 +170,10 @@ public LoadCustomModels()
     AddCharModel(279, 20012, "/skin/army/sffd1-1.dff", "/skin/army/sffd1-1.txd");
     AddCharModel(281, 20013, "/skin/army/sfpd1-1.dff", "/skin/army/sfpd1-1.txd");
     AddCharModel(285, 20014, "/skin/army/swat1.dff", "/skin/army/swat1.txd");
+    
+    // // Custom Vehicles - Try different approaches
+    AddVehicleModel(411, 30001, "/vehicle/lambor.dff", "/vehicle/lambor.txd");
+    // AddSimpleModel(-1, 411, 30001, "lambor.dff", "lambor.txd");
 
     print("[Models] Custom models loaded successfully!");
     return 1;

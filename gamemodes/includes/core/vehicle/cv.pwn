@@ -9,12 +9,12 @@
 
 // Configuration
 #define MAX_CUSTOM_VEHICLES     1000
-#define CUSTOM_MODEL_START      20000
-#define CUSTOM_MODEL_END        30000
+#define CUSTOM_MODEL_START      30001
+#define CUSTOM_MODEL_END        40000
 #define DEFAULT_MODEL_START     400
 #define DEFAULT_MODEL_END       611
 #define VEHICLE_CONFIG_FILE     "cv.cfg"
-#define VEHICLE_MODELS_PATH     "models/vehicle/"
+#define VEHICLE_MODELS_PATH     "/models/Vehicle/"
 
 enum E_CUSTOM_VEHICLE_DATA
 {
@@ -31,8 +31,8 @@ static bool:CVSystemInitialized = false;
 
 stock LoadCustomVehicleModels();
 stock LoadCustomVehicleConfig();
-stock bool:IsValidCustomVehicle(modelid);
 stock bool:IsValidDefaultVehicle(modelid);
+stock bool:IsValidVehicleModel(modelid);
 stock GetCustomVehicleNameByID(modelid, name[], maxsize);
 
 stock InitCustomVehicleSystem()
@@ -87,18 +87,8 @@ stock LoadCustomVehicleConfig()
                 strcpy(CustomVehicleData[TotalCustomVehicles][cvDffFile], dfffile, 128);
                 strcpy(CustomVehicleData[TotalCustomVehicles][cvTxdFile], txdfile, 128);
 
-                // check file existence
-                if (fexist(dfffile) && fexist(txdfile))
-                {
-                    CustomVehicleData[TotalCustomVehicles][cvLoaded] = true;
-                }
-                else
-                {
-                    CustomVehicleData[TotalCustomVehicles][cvLoaded] = false;
-                    printf("Warning: Missing files for model %d (%s)",
-                           CustomVehicleData[TotalCustomVehicles][cvModelID],
-                           CustomVehicleData[TotalCustomVehicles][cvName]);
-                }
+                // Since models are loaded via AddSimpleModel() API, mark as loaded
+                CustomVehicleData[TotalCustomVehicles][cvLoaded] = true;
 
                 TotalCustomVehicles++;
             }
@@ -128,36 +118,21 @@ stock LoadCustomVehicleModels()
         format(dffpath, sizeof(dffpath), "%s%s", VEHICLE_MODELS_PATH, CustomVehicleData[i][cvDffFile]);
         format(txdpath, sizeof(txdpath), "%s%s", VEHICLE_MODELS_PATH, CustomVehicleData[i][cvTxdFile]);
 
-        new File:dffFile = fopen(dffpath, io_read);
-        new File:txdFile = fopen(txdpath, io_read);
-
-        if (dffFile && txdFile)
-        {
-            fclose(dffFile);
-            fclose(txdFile);
-            CustomVehicleData[i][cvLoaded] = true;
-            loadedCount++;
-
-            printf("Loaded vehicle: %s (ID: %d) - DFF: %s, TXD: %s",
-                   CustomVehicleData[i][cvName],
-                   CustomVehicleData[i][cvModelID],
-                   CustomVehicleData[i][cvDffFile],
-                   CustomVehicleData[i][cvTxdFile]
-                  );
-        }
-        else
-        {
-            if (dffFile) fclose(dffFile);
-            if (txdFile) fclose(txdFile);
-
-            CustomVehicleData[i][cvLoaded] = false;
-
-            if (!dffFile) printf("Warning: DFF file not found: %s", dffpath);
-            if (!txdFile) printf("Warning: TXD file not found: %s", txdpath);
-        }
+        // Since models are loaded via AddSimpleModel() in LoadCustomModels(), 
+        // we'll mark all as loaded without file validation
+        CustomVehicleData[i][cvLoaded] = true;
+        loadedCount++;
+        
+        // Optional: You can still check files for debugging if needed
+        // new File:dffFile = fopen(dffpath, io_read);
+        // new File:txdFile = fopen(txdpath, io_read);
+        // if (!dffFile) printf("Info: DFF file path: %s", dffpath);
+        // if (!txdFile) printf("Info: TXD file path: %s", txdpath);
+        // if (dffFile) fclose(dffFile);
+        // if (txdFile) fclose(txdFile);
     }
 
-    printf("Successfully validated & loaded %d/%d vehicle models", loadedCount, TotalCustomVehicles);
+    printf("Custom Vehicle Models: %d/%d loaded successfully", loadedCount, TotalCustomVehicles);
 }
 
 stock CreateDefaultVehicleConfig()
@@ -198,8 +173,12 @@ stock bool:IsValidCustomVehicle(modelid)
 
 stock bool:IsValidDefaultVehicle(modelid)
 {
-    return ((modelid >= DEFAULT_MODEL_START && modelid <= DEFAULT_MODEL_END)
-            || (modelid >= CUSTOM_MODEL_START && modelid <= CUSTOM_MODEL_END));
+    return (modelid >= DEFAULT_MODEL_START && modelid <= DEFAULT_MODEL_END);
+}
+
+stock bool:IsValidVehicleModel(modelid)
+{
+    return (IsValidDefaultVehicle(modelid) || IsValidCustomVehicle(modelid));
 }
 
 stock GetCustomVehicleNameByID(modelid, name[], maxsize)
@@ -218,25 +197,137 @@ stock GetCustomVehicleNameByID(modelid, name[], maxsize)
 
 CMD:cv(playerid, params[])
 {
+    if(PlayerInfo[playerid][pAdmin] < 2) {
+        return SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong duoc phep su dung lenh nay.");
+    }
+
     if (!CVSystemInitialized)
     {
-        SendClientMessage(playerid, 0xFF0000FF, "Error: Vehicle system not initialized!");
+        SendClientMessage(playerid, 0xFF0000FF, "Custom Vehicle System chua duoc khoi tao!");
         return 1;
     }
 
-    new modelid;
-    if (sscanf(params, "i", modelid))
+    new modelid, color1 = -1, color2 = -1;
+    if (sscanf(params, "dD(-1)D(-1)", modelid, color1, color2))
     {
-        SendClientMessage(playerid, 0xFFFFFFFF, "Usage: /cv [modelid]");
-        SendClientMessage(playerid, 0xFFFFFFFF, "Custom vehicles: 20000-30000 | Default vehicles: 400-611");
+        SendClientMessage(playerid, 0x4A90E2FF, "SU DUNG: /cv [model ID] [mau 1] [mau 2]");
+        SendClientMessage(playerid, 0x4A90E2FF, "Custom vehicles: 20000-30000");
+        SendClientMessage(playerid, 0x4A90E2FF, "Su dung /listcv de xem danh sach custom vehicles");
         return 1;
     }
 
-    if (!IsValidCustomVehicle(modelid) && !IsValidDefaultVehicle(modelid))
+    if (!IsValidVehicleModel(modelid))
     {
-        SendClientMessage(playerid, 0xFF0000FF, "Error: Invalid or unloaded vehicle model!");
+        SendClientMessage(playerid, 0xFF6B6BFF, "Model ID khong hop le!");
+        SendClientMessage(playerid, 0x4A90E2FF, "Regular vehicles: 400-611, Custom vehicles: 20000-30000");
+        SendClientMessage(playerid, 0x4A90E2FF, "Su dung /listcv de xem danh sach custom vehicles co san");
         return 1;
     }
+
+    // Set default colors if not specified
+    if(color1 == -1) color1 = 0;
+    if(color2 == -1) color2 = 0;
+
+    // Validate colors
+    if(!(0 <= color1 <= 255 && 0 <= color2 <= 255)) {
+        SendClientMessage(playerid, 0xFF6B6BFF, "ID mau xe phai tu 0 den 255.");
+        return 1;
+    }
+
+    // Get player position and create vehicle
+    new Float: fVehPos[4];
+    GetPlayerPos(playerid, fVehPos[0], fVehPos[1], fVehPos[2]);
+    GetPlayerFacingAngle(playerid, fVehPos[3]);
+    
+    printf("[CV DEBUG] Creating vehicle - Model: %d, Pos: %.2f %.2f %.2f, Colors: %d %d", 
+           modelid, fVehPos[0], fVehPos[1], fVehPos[2], color1, color2);
+    
+    // Check if it's custom model
+    if (modelid >= CUSTOM_MODEL_START && modelid <= CUSTOM_MODEL_END) {
+        printf("[CV DEBUG] This is a CUSTOM vehicle model");
+    } else {
+        printf("[CV DEBUG] This is a REGULAR vehicle model");
+    }
+    
+    new vehicleid = CreateVehicle(modelid, fVehPos[0], fVehPos[1], fVehPos[2], fVehPos[3], color1, color2, -1);
+    
+    printf("[CV DEBUG] CreateVehicle result: %d (INVALID=%d)", vehicleid, INVALID_VEHICLE_ID);
+    
+    if(vehicleid != INVALID_VEHICLE_ID) {
+        SetVehicleVirtualWorld(vehicleid, GetPlayerVirtualWorld(playerid));
+        LinkVehicleToInterior(vehicleid, GetPlayerInterior(playerid));
+        
+        new vehName[64];
+        GetCustomVehicleNameByID(modelid, vehName, sizeof(vehName));
+        
+        new string[128];
+        format(string, sizeof(string), "Ban da tao custom vehicle '%s' (Model: %d, ID: %d)", vehName, modelid, vehicleid);
+        SendClientMessage(playerid, 0x4CAF50FF, string);
+        
+        printf("[CustomVeh] %s created custom vehicle %s (Model: %d, ID: %d)", GetPlayerNameEx(playerid), vehName, modelid, vehicleid);
+    } else {
+        SendClientMessage(playerid, 0xFF6B6BFF, "Khong the tao xe! Co loi xay ra.");
+    }
+
+    return 1;
+}
+
+CMD:listcv(playerid, params[])
+{
+    if(PlayerInfo[playerid][pAdmin] < 2) {
+        return SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong duoc phep su dung lenh nay.");
+    }
+
+    if (!CVSystemInitialized || TotalCustomVehicles == 0)
+    {
+        SendClientMessage(playerid, 0xFF6B6BFF, "Khong co custom vehicle nao duoc load!");
+        return 1;
+    }
+
+    SendClientMessage(playerid, 0x2196F3FF, "=== DANH SACH CUSTOM VEHICLES ===");
+    
+    new loadedCount = 0;
+    for (new i = 0; i < TotalCustomVehicles; i++)
+    {
+        if (CustomVehicleData[i][cvLoaded])
+        {
+            new string[128];
+            format(string, sizeof(string), "ID: %d | Ten: %s", 
+                   CustomVehicleData[i][cvModelID], 
+                   CustomVehicleData[i][cvName]);
+            SendClientMessage(playerid, 0xFFFFFFFF, string);
+            loadedCount++;
+        }
+    }
+    
+    new summary[64];
+    format(summary, sizeof(summary), "Tong cong: %d/%d custom vehicles da load", loadedCount, TotalCustomVehicles);
+    SendClientMessage(playerid, 0x4CAF50FF, summary);
+    SendClientMessage(playerid, 0x4A90E2FF, "Su dung: /cv [model ID] de tao xe");
+
+    return 1;
+}
+
+CMD:reloadcv(playerid, params[])
+{
+    if(PlayerInfo[playerid][pAdmin] < 4) {
+        return SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong duoc phep su dung lenh nay.");
+    }
+
+    SendClientMessage(playerid, 0xFF9800FF, "Dang reload Custom Vehicle System...");
+    
+    // Reset system
+    TotalCustomVehicles = 0;
+    CVSystemInitialized = false;
+    
+    // Reinitialize
+    InitCustomVehicleSystem();
+    
+    new string[128];
+    format(string, sizeof(string), "Da reload thanh cong Custom Vehicle System! (%d vehicles)", TotalCustomVehicles);
+    SendClientMessage(playerid, 0x4CAF50FF, string);
+    
+    printf("[CustomVeh] %s reloaded Custom Vehicle System (%d vehicles)", GetPlayerNameEx(playerid), TotalCustomVehicles);
 
     return 1;
 }

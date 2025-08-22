@@ -1371,6 +1371,7 @@ native
  * <library>omp_object</library>
  */
 native bool:AddCharModel(baseid, newid, const dff[], const textureLibrary[]);
+native bool:AddVehicleModel(baseid, newid, const dff[], const textureLibrary[]);
 
 /**
  * <library>omp_object</library>
