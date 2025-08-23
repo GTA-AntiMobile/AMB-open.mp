@@ -20466,7 +20466,11 @@ CMD:veh(playerid, params[]) {
 			SendClientMessageEx(playerid, COLOR_GRAD2, "ID xe phai tu 400-611 (xe goc) hoac 30001-40000 (xe custom)");
 		}
 		else if(30001 <= iVehicle <= 40000) {
-			SendClientMessageEx(playerid, COLOR_GRAD2, "Custom vehicle model ID nay chua duoc load hoac khong ton tai!");
+			// Check if custom vehicle model is loaded
+			if(!IsValidCustomVehicle(iVehicle)) {
+				SendClientMessageEx(playerid, COLOR_GRAD2, "Custom vehicle model ID nay chua duoc load hoac khong ton tai!");
+				return 1;
+			}
 		}
 		else if(IsATrain(iVehicle)) {
 			SendClientMessageEx(playerid, COLOR_GREY, "Trains cannot be spawned during runtime.");

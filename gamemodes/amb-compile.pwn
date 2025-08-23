@@ -138,16 +138,7 @@ public OnGameModeInit()
     
     g_mysql_Init();
     return 1;
-
-
 }
-
-	forward ConfirmModelsLoaded();
-	public ConfirmModelsLoaded()
-	{
-	    print("[CustomVeh] All custom models ready for streaming!");
-	    return 1;
-	}
 
 forward LoadCustomModels();
 public LoadCustomModels()
@@ -171,15 +162,17 @@ public LoadCustomModels()
     AddCharModel(281, 20013, "/skin/army/sfpd1-1.dff", "/skin/army/sfpd1-1.txd");
     AddCharModel(285, 20014, "/skin/army/swat1.dff", "/skin/army/swat1.txd");
     
-    // // Custom Vehicles - Try different approaches
-    AddVehicleModel(411, 30001, "/vehicle/lambor.dff", "/vehicle/lambor.txd");
-    // AddSimpleModel(-1, 411, 30001, "lambor.dff", "lambor.txd");
+    // Load Custom Vehicle Models
+    printf("[MODELS] Loading custom vehicle models...");
+    AddVehicleModel(411, 30001, "Vehicle/lambor.dff", "Vehicle/lambor.txd");
+    AddVehicleModel(412, 30002, "Vehicle/m6.dff", "Vehicle/m6.txd");
+    AddVehicleModel(413, 30003, "Vehicle/alpha.dff", "Vehicle/alpha.txd");
 
-    print("[Models] Custom models loaded successfully!");
+    printf("[Models] Custom models loaded.");
     return 1;
 }
 
-public OnGameModeExit() 
+public OnGameModeExit()
 {
     g_mysql_Exit();
     return 1;
