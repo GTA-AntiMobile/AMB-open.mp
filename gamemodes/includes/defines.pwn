@@ -11,8 +11,8 @@ native WP_Hash(buffer[], len, const str[]);
 #define 		MAX_PLAYERS					(500)
 #define 		MAX_PING 					1200
 #define			INVALID_SAMP_ID				65535
-#define			WEB_SERVER					"127.0.0.1"
-#define			SAMP_WEB					"127.0.0.1"
+#define			WEB_SERVER					"26.142.249.17"
+#define			SAMP_WEB					"http://26.142.249.17:8081/"
 #define			XP_RATE						25 // XP Rates for jobs
 #define			XP_RATE_HOURLY				2 // XP Bounes per paycheck (LEVEL * XP_RATE * XP_RATE_HOURLY)
 
@@ -318,7 +318,6 @@ native WP_Hash(buffer[], len, const str[]);
 #define			VEHICLESTORAGE				(1060)
 #define         DV_TRACKCAR                 (1061)
 #define         DV_STORAGE                  (1062)
-
 #define			DIALOG_NUMBER_PLATE			(1080)
 #define			DIALOG_NUMBER_PLATE_CHOSEN	(1090)
 #define			COLORMENU					(1100)
@@ -990,6 +989,10 @@ native WP_Hash(buffer[], len, const str[]);
 #define 		NO_EXTRAID 						-1
 #define 		LOADUSERDATA_THREAD 			1
 #define 		SENDDATA_THREAD 				999999
+
+// Phone Share Dialog ID
+#define DIALOG_PHONE_SHARE_CONFIRM      5111
+
 #define 		AUTH_THREAD 					3
 #define 		LOGIN_THREAD 					4
 #define 		REGISTER_THREAD 				5
@@ -1088,3 +1091,44 @@ forward ControlCam(playerid);
 
 forward OnPlayerModelSelection(playerid, response, listid, modelid);
 forward OnPlayerModelSelectionEx(playerid, response, extraid, modelid);
+
+// ==================== HISTORY SYSTEM DEFINES ====================
+// Money Transfer Types
+#define MONEY_TYPE_GIVE             1
+#define MONEY_TYPE_BANK_DEPOSIT     2
+#define MONEY_TYPE_BANK_WITHDRAW    3
+#define MONEY_TYPE_BUSINESS         4
+#define MONEY_TYPE_SALARY           5
+#define MONEY_TYPE_FINE             6
+#define MONEY_TYPE_ADMIN            7
+
+// Death Types
+#define DEATH_TYPE_KILLED           1
+#define DEATH_TYPE_SUICIDE          2
+#define DEATH_TYPE_ACCIDENT         3
+#define DEATH_TYPE_ADMIN            4
+
+// Weapon Log Types
+#define WEAPON_TYPE_GROUP           1
+#define WEAPON_TYPE_FAMILY          2
+#define WEAPON_TYPE_ADMIN           3
+
+// History Types
+#define HISTORY_TYPE_DEATH          1
+#define HISTORY_TYPE_MONEY          2
+#define HISTORY_TYPE_WEAPON         3
+
+// Vehicle Skin System Dialogs
+#define DIALOG_VEHICLE_SKINS        2000
+#define DIALOG_SKIN_DETAILS_BUY     2001
+#define DIALOG_SKIN_DETAILS_OWNED   2002
+#define DIALOG_PLAYER_SKINS         2003
+#define DIALOG_ADMIN_SKINS          2004
+
+// Custom Vehicle System
+#define MAX_CUSTOM_VEHICLES 99
+#define CUSTOM_VEHICLE_START_ID 30000
+#define CUSTOM_VEHICLE_END_ID 30099
+#define CUSTOM_VEHICLE_CONFIG_FILE "scriptfiles/custom_vehicles.cfg"
+#define DIALOG_CUSTOM_VEHICLES 2005
+#define DIALOG_CUSTOM_VEHICLE_INFO 2006

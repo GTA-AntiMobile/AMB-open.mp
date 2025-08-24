@@ -161,10 +161,6 @@ stock GiveSeedAndSetPlantCP(playerid, planttype = PLANT_TYPE_MARIJUANA)
     return 1;
 }
 
-CMD:test(playerid, params[]) {
-    GiveSeedAndSetPlantCP(playerid, PLANT_TYPE_MARIJUANA);
-    return 1;
-}
 
 CMD:seeds(playerid, params[])
 {
@@ -588,6 +584,7 @@ hook OnGameModeInit()
         {
             InitializePlayerPlantInventory(i);
         }
+        break;
     }
 }
 

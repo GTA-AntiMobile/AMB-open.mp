@@ -1854,16 +1854,6 @@ task ServerHeartbeatTwo[1000]() {
 		{
 		    GivePlayerValidWeapon( i, 46, 9 );
 		}
-		if(GetPlayerState(i) == PLAYER_STATE_ONFOOT) for(new h = 0; h < sizeof(FamilyInfo); h++)
-		{
-			if(IsPlayerInRangeOfPoint(i, 2.0, FamilyInfo[h][FamilySafe][0], FamilyInfo[h][FamilySafe][1], FamilyInfo[h][FamilySafe][2]) && GetPlayerVirtualWorld(i) == FamilyInfo[h][FamilySafeVW] && GetPlayerInterior(i) == FamilyInfo[h][FamilySafeInt])
-			{
-				if(FamilyInfo[h][FamilyUSafe] == 1)
-				{
-					GameTextForPlayer(i, "~y~gang safe~w~~n~Su dung ~r~/safehelp~w~ de biet them thong tin", 5000, 3);
-				}
-			}
-		}
 
 		for(new h = 0; h < sizeof(Points); h++)
 		{

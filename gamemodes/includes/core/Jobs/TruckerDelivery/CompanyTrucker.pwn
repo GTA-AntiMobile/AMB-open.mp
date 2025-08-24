@@ -1,7 +1,6 @@
 #include <YSI\YSI_Coding\y_hooks>
 #include <streamer>
 
-// MySQL R41-4 Compatibility
 #define mysql_function_query(%0,%1,%2,%3,%4,%5) mysql_function_query_internal(%0,%1,%2,%3,%4,%5)
 
 #define DIALOG_TRUCKER_COMPANY_MAIN 9000
@@ -29,13 +28,19 @@
 #define MAX_TRUCKER_BOX_SLOTS 200
 #define DIALOG_COMPANY_GETBOX 9802
 
+forward bool:CalculateGroundPlacement(playerid, &Float:ox, &Float:oy, &Float:oz);
+
 new TruckerVehicleNames[MAX_TRUCKER_VEHICLES][32];
 new TruckerVehicleGrantTime[MAX_TRUCKER_VEHICLES][32];
 
-#define PICKUP_BOX_DISTANCE 2.0
+#define PICKUP_BOX_DISTANCE 4.0
 #define BOX_TYPE_NGUYEN_LIEU 1
 #define BOX_TYPE_VAT_PHAM    2
 #define BOX_TYPE_DUNG_CU     3
+
+#define SPECIAL_TRUCK_ID 554        // Vehicle ID (not model)
+#define SPECIAL_BOX_OBJECT 3800
+#define PLAYER_BOX_OBJECT 2969
 
 new const BoxTypeNames[][] = {
     "Trong",        // 0
@@ -81,6 +86,7 @@ enum eCompanyBox
     boxName[32],
     boxAmount,
     boxModel,
+    boxTargetName[MAX_PLAYER_NAME],
     Text3D:boxLabelID 
 };
 new CompanyBoxes[MAX_COMPANY_BOXES][eCompanyBox];
@@ -88,145 +94,360 @@ new CompanyBoxes[MAX_COMPANY_BOXES][eCompanyBox];
 new g_PlayerBoxName[MAX_PLAYERS][32];
 new g_PlayerBoxAmount[MAX_PLAYERS];
 new g_PlayerBoxOwner[MAX_PLAYERS];
-new g_BoxInputTarget[MAX_PLAYERS];
+new g_BoxInputTargetName[MAX_PLAYERS][MAX_PLAYER_NAME];
 new g_BoxInputName[MAX_PLAYERS][32];
 new bool:g_PlayerCarryingBox[MAX_PLAYERS];
+new bool:g_PlayerCarryingSpecialBox[MAX_PLAYERS]; 
+
+new Vehicle554BoxObject[MAX_VEHICLES]; 
+new bool:Vehicle554HasBox[MAX_VEHICLES]; 
+new bool:AdminOpenedBox[MAX_COMPANY_BOXES]; 
+new Vehicle554BoxType[MAX_VEHICLES]; 
+new Vehicle554BoxAmount[MAX_VEHICLES]; 
+new Vehicle554BoxName[MAX_VEHICLES][32]; 
 
 hook OnGameModeInit()
 {
     LoadTruckerCompany();
     LoadTruckerCompanyMembers();
     LoadTruckerCertifiedVehicles();
+    
+    for(new i = 0; i < MAX_VEHICLES; i++)
+    {
+        Vehicle554BoxObject[i] = 0;
+        Vehicle554HasBox[i] = false;
+        Vehicle554BoxType[i] = 0;
+        Vehicle554BoxAmount[i] = 0;
+        Vehicle554BoxName[i][0] = '\0';
+    }
+    
+    for(new i = 0; i < MAX_COMPANY_BOXES; i++)
+    {
+        AdminOpenedBox[i] = false;
+    }
+    
+    for(new i = 0; i < MAX_PLAYERS; i++)
+    {
+        g_PlayerCarryingSpecialBox[i] = false;
+    }
+    
     return 1;
 }
 
 hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 {
+    new boxid; 
     if(newkeys & KEY_YES)
     {
-        if(g_PlayerCarryingBox[playerid] && IsPlayerNearTruck(playerid, 2.0))
-        {
-            new vehicleid = GetNearestTruckerVehicle(playerid, 2.0);
             
-            SetPVarInt(playerid, "CompanyTruckerVehicleID", vehicleid);
-
-            new str[2048];
-            new slots = GetTruckBoxSlots(vehicleid);
-            new idx = GetTruckerVehicleIndex(vehicleid);
-            for(new i = 0; i < slots; i++)
+            if(g_PlayerCarryingBox[playerid] && IsPlayerNearTruck(playerid, 5.0))
             {
-                strcat(str, BoxTypeNames[TruckerVehicleBoxType[idx][i]]);
-                strcat(str, "\n");
-            }
-            ShowPlayerDialog(playerid, DIALOG_COMPANY_PUTBOX, DIALOG_STYLE_LIST, "Chon vi tri bo hang vao xe", str, "Bo vao", "Huy");
-            return 1;
-        }
-        if(!g_PlayerCarryingBox[playerid] && IsPlayerNearTruck(playerid, 2.0))
-        {
-            new vehicleid = GetNearestTruckerVehicle(playerid, 2.0);
+                new vehicleid = GetNearestTruckerVehicle(playerid, 5.0);
+                
+                SetPVarInt(playerid, "CompanyTruckerVehicleID", vehicleid);
 
-            SetPVarInt(playerid, "CompanyTruckerVehicleID", vehicleid);
-
-            new str[2048];
-            new slots = GetTruckBoxSlots(vehicleid);
-            new idx = GetTruckerVehicleIndex(vehicleid);
-            for(new i = 0; i < slots; i++)
-            {
-                if(TruckerVehicleBoxType[idx][i] != 0)
-                    format(str, sizeof(str), "%s%s\n", str, TruckerVehicleBoxName[idx][i]);
-                else
-                    strcat(str, "Trong\n");
-            }
-            ShowPlayerDialog(playerid, DIALOG_COMPANY_GETBOX, DIALOG_STYLE_LIST, "Chon vi tri lay hang tu xe", str, "Lay", "Huy");
-            return 1;
-        }
-        if(g_PlayerCarryingBox[playerid] && !IsPlayerNearTruck(playerid, 2.0))
-        {
-            new Float:x, Float:y, Float:z, Float:angle;
-            GetPlayerPos(playerid, x, y, z);
-            GetPlayerFacingAngle(playerid, angle);
-
-            new Float:distance = 1.0;
-            new Float:ox = x + (distance * floatsin(-angle, degrees));
-            new Float:oy = y + (distance * floatcos(-angle, degrees));
-            new Float:oz = z;
-
-            for(new i = 0; i < MAX_COMPANY_BOXES; i++)
-            {
-                if(CompanyBoxes[i][boxObjID] == 0)
+                new str[2048];
+                new slots = GetTruckBoxSlots(vehicleid);
+                new idx = GetTruckerVehicleIndex(vehicleid);
+                for(new i = 0; i < slots; i++)
                 {
-                    CompanyBoxes[i][boxObjID] = CreateDynamicObject(2912, ox, oy, oz, 0.0, 0.0, 0.0);
-                    CompanyBoxes[i][boxModel] = 2912;
-                    CompanyBoxes[i][boxOwner] = playerid;
-                    format(CompanyBoxes[i][boxName], 32, "%s", g_PlayerBoxName[playerid]);
-                    CompanyBoxes[i][boxAmount] = g_PlayerBoxAmount[playerid];
-
-                    RemovePlayerAttachedObject(playerid, 0);
-                    g_PlayerCarryingBox[playerid] = false;
-                    g_PlayerBoxOwner[playerid] = 0;
-                    g_PlayerBoxName[playerid][0] = 0;
-                    g_PlayerBoxAmount[playerid] = 0;
-                    break;
+                    strcat(str, BoxTypeNames[TruckerVehicleBoxType[idx][i]]);
+                    strcat(str, "\n");
+                }
+                ShowPlayerDialog(playerid, DIALOG_COMPANY_PUTBOX, DIALOG_STYLE_LIST, "Chon vi tri bo hang vao xe", str, "Bo vao", "Huy");
+                return 1;
+            }
+            if(!g_PlayerCarryingBox[playerid] && PlayerInfo[playerid][pAdmin] >= 4)
+            {
+                for(new v = 1; v < MAX_VEHICLES; v++)
+                {
+                    if(GetVehicleModel(v) == 554 && Vehicle554HasBox[v])
+                    {
+                        new Float:vx, Float:vy, Float:vz;
+                        GetVehiclePos(v, vx, vy, vz);
+                        if(GetPlayerDistanceFromPoint(playerid, vx, vy, vz) <= 6.0) 
+                        {
+                            TakeBoxFromVehicle554(playerid, v);
+                            return 1;
+                        }
+                    }
                 }
             }
-            return 1;
-        }
-        if(!g_PlayerCarryingBox[playerid])
-        {
-            new boxid = GetNearestCompanyBox(playerid);
-
-            if(boxid != -1 && CompanyBoxes[boxid][boxModel] == 3799)
+            
+            if(!g_PlayerCarryingBox[playerid] && IsPlayerNearTruck(playerid, 5.0))
             {
-                if(CompanyBoxes[boxid][boxAmount] <= 0)
+                new vehicleid = GetNearestTruckerVehicle(playerid, 5.0);
+
+                SetPVarInt(playerid, "CompanyTruckerVehicleID", vehicleid);
+
+                new str[2048];
+                new slots = GetTruckBoxSlots(vehicleid);
+                new idx = GetTruckerVehicleIndex(vehicleid);
+                for(new i = 0; i < slots; i++)
                 {
-                    SendClientMessage(playerid, -1, "Thung hang nay da het hang!");
+                    if(TruckerVehicleBoxType[idx][i] != 0)
+                        format(str, sizeof(str), "%s%s\n", str, TruckerVehicleBoxName[idx][i]);
+                    else
+                        strcat(str, "Trong\n");
+                }
+                ShowPlayerDialog(playerid, DIALOG_COMPANY_GETBOX, DIALOG_STYLE_LIST, "Chon vi tri lay hang tu xe", str, "Lay", "Huy");
+                return 1;
+            }
+            if(g_PlayerCarryingBox[playerid] && PlayerInfo[playerid][pAdmin] >= 4)
+            {
+                new Float:px, Float:py, Float:pz;
+                GetPlayerPos(playerid, px, py, pz);
+                
+                for(new v = 1; v < MAX_VEHICLES; v++)
+                {
+                    if(GetVehicleModel(v) != 0) 
+                    {
+                        new Float:vx, Float:vy, Float:vz;
+                        GetVehiclePos(v, vx, vy, vz);
+                        if(GetPlayerDistanceFromPoint(playerid, vx, vy, vz) <= 5.0) 
+                        {
+                            new vehicleModel = GetVehicleModel(v);
+                            if(vehicleModel == 554) 
+                            {
+                                if(Vehicle554HasBox[v])
+                                {
+                                    SendClientMessage(playerid, -1, "Xe Yosemite nay da co thung hang roi!");
+                                    return 1;
+                                }
+                                PutBoxOnVehicle554(playerid, v);
+                                return 1;
+                            }
+                            else
+                            {
+                                new str[128];
+                                format(str, sizeof(str), "Xe nay khong phai Yosemite! (Model: %d, ID: %d)", vehicleModel, v);
+                                SendClientMessage(playerid, -1, str);
+                                SendClientMessage(playerid, -1, "Ban can tim xe Yosemite (model 554) de dat thung hang!");
+                                return 1; 
+                            }
+                        }
+                    }
+                }
+            }
+            new bool:nearYosemite = false;
+            if(PlayerInfo[playerid][pAdmin] >= 4)
+            {
+                for(new v = 1; v < MAX_VEHICLES; v++)
+                {
+                    if(GetVehicleModel(v) == 554) 
+                    {
+                        new Float:vx, Float:vy, Float:vz;
+                        GetVehiclePos(v, vx, vy, vz);
+                        if(GetPlayerDistanceFromPoint(playerid, vx, vy, vz) <= 5.0)
+                        {
+                            nearYosemite = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if(g_PlayerCarryingBox[playerid] && !IsPlayerNearTruck(playerid, 5.0) && !nearYosemite)
+            {
+                new Float:ox, Float:oy, Float:oz;
+                CalculateGroundPlacement(playerid, ox, oy, oz);
+
+                for(new i = 0; i < MAX_COMPANY_BOXES; i++)
+                {
+                    if(CompanyBoxes[i][boxObjID] == 0)
+                    {
+                        new objectModel = 2969; 
+                        if(g_PlayerCarryingSpecialBox[playerid])
+                        {
+                            objectModel = 3800;
+                            AdminOpenedBox[i] = false; 
+                        }
+                        else
+                        {
+                            AdminOpenedBox[i] = false;
+                        }
+                        
+                        CompanyBoxes[i][boxObjID] = CreateDynamicObject(objectModel, ox, oy, oz, 0.0, 0.0, 0.0);
+                        CompanyBoxes[i][boxModel] = objectModel;
+                        CompanyBoxes[i][boxOwner] = playerid;
+                        format(CompanyBoxes[i][boxName], 32, "%s", g_PlayerBoxName[playerid]);
+                        CompanyBoxes[i][boxAmount] = g_PlayerBoxAmount[playerid];
+                        format(CompanyBoxes[i][boxTargetName], MAX_PLAYER_NAME, "%s", g_BoxInputTargetName[playerid]);
+
+                        if(objectModel == 3800)
+                        {
+                            new label[128];
+                            new targetName[MAX_PLAYER_NAME];
+                            if(strlen(CompanyBoxes[i][boxTargetName]) > 0)
+                            {
+                                format(targetName, sizeof(targetName), "%s", CompanyBoxes[i][boxTargetName]);
+                            }
+                            else
+                            {
+                                format(targetName, sizeof(targetName), "Khong co");
+                            }
+                            format(label, sizeof(label), "{FFFF00}%s\n{FFFFFF}So luong: %d\n{FFFFFF}Nguoi nhan: %s\n{FF0000}[CLOSED]", 
+                                CompanyBoxes[i][boxName], CompanyBoxes[i][boxAmount], targetName);
+                            CompanyBoxes[i][boxLabelID] = CreateDynamic3DTextLabel(label, 0xFFFFFFFF, ox, oy, oz+1.0, 20.0);
+                        }
+
+                        ApplyAnimation(playerid, "BOMBER", "BOM_Plant", 4.1, false, false, false, false, 0);
+                        
+                        RemovePlayerAttachedObject(playerid, 0);
+                        g_PlayerCarryingBox[playerid] = false;
+                        g_PlayerCarryingSpecialBox[playerid] = false; 
+                        g_PlayerBoxOwner[playerid] = 0;
+                        g_PlayerBoxName[playerid][0] = 0;
+                        g_PlayerBoxAmount[playerid] = 0;
+                        break;
+                    }
+                }
+                return 1;
+            }
+            boxid = GetNearestCompanyBox(playerid);
+            
+            if(boxid != -1 && CompanyBoxes[boxid][boxModel] == 3800)
+            {
+                if(AdminOpenedBox[boxid])
+                {
+                    if(g_PlayerCarryingBox[playerid] && !g_PlayerCarryingSpecialBox[playerid])
+                    {
+                        SendClientMessage(playerid, COLOR_RED, "Ban dang cam thung hang nho! Hay dat thung hang xuong truoc khi lay tu thung hang lon!");
+                        return 1;
+                    }
+                    
+                    if(g_PlayerCarryingBox[playerid])
+                    {
+                        SendClientMessage(playerid, -1, "Ban da dang cam thung hang roi!");
+                        return 1;
+                    }
+                    
+                    if(PlayerInfo[playerid][pAdmin] >= 4)
+                    {
+                        SendClientMessage(playerid, -1, "Admin: Ban da mo thung hang nay roi! Chi player moi co the lay hang, admin khong the cam thung nua!");
+                        return 1;
+                    }
+                    if(CompanyBoxes[boxid][boxAmount] <= 0)
+                    {
+                        SendClientMessage(playerid, -1, "Thung hang nay da het hang!");
+                        return 1;
+                    }
+
+                    g_PlayerCarryingBox[playerid] = true;
+                    g_PlayerCarryingSpecialBox[playerid] = false; 
+                    g_PlayerBoxOwner[playerid] = playerid;
+                    format(g_PlayerBoxName[playerid], 32, "%s", CompanyBoxes[boxid][boxName]);
+                    g_PlayerBoxAmount[playerid] = 1;
+                    SetPlayerAttachedObject(playerid, 0, 2969, 6, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0);
+                    ApplyAnimation(playerid, "CARRY", "crry_prtial", 4.1, false, false, false, false, 0);
+
+                    CompanyBoxes[boxid][boxAmount]--;
+
+                    if(CompanyBoxes[boxid][boxAmount] <= 0)
+                    {
+                        SendClientMessage(playerid, -1, "Ban vua lay phan hang cuoi cung trong thung nay!");
+                        DestroyDynamicObject(CompanyBoxes[boxid][boxObjID]);
+                        if(CompanyBoxes[boxid][boxLabelID] != Text3D:0)
+                        {
+                            DestroyDynamic3DTextLabel(CompanyBoxes[boxid][boxLabelID]);
+                        }
+                        CompanyBoxes[boxid][boxObjID] = 0;
+                        CompanyBoxes[boxid][boxName][0] = '\0';
+                        CompanyBoxes[boxid][boxAmount] = 0;
+                        CompanyBoxes[boxid][boxOwner] = 0;
+                        CompanyBoxes[boxid][boxModel] = 0;
+                        CompanyBoxes[boxid][boxTargetName][0] = '\0';
+                        CompanyBoxes[boxid][boxLabelID] = Text3D:0;
+                        AdminOpenedBox[boxid] = false;
+                    }
+                    else
+                    {
+                        new msg[64];
+                        format(msg, sizeof(msg), "Con %d hang trong thung nay.", CompanyBoxes[boxid][boxAmount]);
+                        SendClientMessage(playerid, -1, msg);
+                        
+                        if(CompanyBoxes[boxid][boxLabelID] != Text3D:0)
+                        {
+                            DestroyDynamic3DTextLabel(CompanyBoxes[boxid][boxLabelID]);
+                        }
+                        new Float:bx, Float:by, Float:bz;
+                        GetDynamicObjectPos(CompanyBoxes[boxid][boxObjID], bx, by, bz);
+                        new label[128];
+                        format(label, sizeof(label), "{00FF00}%s\n{FFFFFF}So luong: %d\n{00FF00}[OPEN]", 
+                            CompanyBoxes[boxid][boxName], CompanyBoxes[boxid][boxAmount]);
+                        CompanyBoxes[boxid][boxLabelID] = CreateDynamic3DTextLabel(label, 0xFFFFFFFF, bx, by, bz+1.0, 20.0);
+                    }
                     return 1;
-                }
-
-                CompanyBoxes[boxid][boxAmount]--;
-
-                g_PlayerCarryingBox[playerid] = true;
-                g_PlayerBoxOwner[playerid] = playerid;
-                format(g_PlayerBoxName[playerid], 32, "%s", CompanyBoxes[boxid][boxName]);
-                g_PlayerBoxAmount[playerid] = 1;
-                SetPlayerAttachedObject(playerid, 0, 2912, 6, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0);
-                ApplyAnimation(playerid, "CARRY", "crry_prtial", 4.1, true, true, true, true, 0);
-
-                if(CompanyBoxes[boxid][boxAmount] == 0)
-                {
-                    SendClientMessage(playerid, -1, "Ban vua lay phan hang cuoi cung trong thung nay!");
-                }
+                } 
                 else
                 {
-                    new msg[64];
-                    format(msg, sizeof(msg), "Con %d hang trong thung nay.", CompanyBoxes[boxid][boxAmount]);
-                    SendClientMessage(playerid, -1, msg);
-                }
-                return 1;
-            }
-
-            if(boxid != -1 && CompanyBoxes[boxid][boxModel] == 2912)
+                    if(PlayerInfo[playerid][pAdmin] < 4)
+                    {
+                        SendClientMessage(playerid, -1, "Thung hang nay chua duoc mo boi admin! Vui long doi admin su dung /mohang!");
+                        return 1;
+                    }
+                    
+                    if(g_PlayerCarryingBox[playerid])
+                    {
+                        SendClientMessage(playerid, COLOR_RED, "Ban dang cam thung hang roi! Hay dat thung hang xuong truoc khi cam thung khac!");
+                        return 1;
+                    }
+                    
+                    g_PlayerCarryingBox[playerid] = true;
+                    g_PlayerCarryingSpecialBox[playerid] = true; 
+                    g_PlayerBoxOwner[playerid] = playerid;
+                    format(g_PlayerBoxName[playerid], 32, "%s", CompanyBoxes[boxid][boxName]);
+                    g_PlayerBoxAmount[playerid] = CompanyBoxes[boxid][boxAmount]; 
+                    format(g_BoxInputTargetName[playerid], MAX_PLAYER_NAME, "%s", CompanyBoxes[boxid][boxTargetName]);
+                    SetPlayerAttachedObject(playerid, 0, SPECIAL_BOX_OBJECT, 6, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0);
+                    ApplyAnimation(playerid, "CARRY", "crry_prtial", 4.1, false, false, false, false, 0);
+                    
+                    DestroyDynamicObject(CompanyBoxes[boxid][boxObjID]);
+                    if(CompanyBoxes[boxid][boxLabelID] != Text3D:0)
+                    {
+                        DestroyDynamic3DTextLabel(CompanyBoxes[boxid][boxLabelID]);
+                    }
+                    CompanyBoxes[boxid][boxObjID] = 0;
+                    CompanyBoxes[boxid][boxName][0] = '\0';
+                    CompanyBoxes[boxid][boxAmount] = 0;
+                    CompanyBoxes[boxid][boxOwner] = 0;
+                    CompanyBoxes[boxid][boxModel] = 0;
+                    CompanyBoxes[boxid][boxTargetName][0] = '\0';
+                    CompanyBoxes[boxid][boxLabelID] = Text3D:0;
+                    AdminOpenedBox[boxid] = false;
+                    return 1;
+            } 
+        } 
+            if(boxid != -1 && CompanyBoxes[boxid][boxModel] == 2969)
+        {
+            if(g_PlayerCarryingBox[playerid])
             {
-                g_PlayerCarryingBox[playerid] = true;
-                g_PlayerBoxOwner[playerid] = playerid;
-                format(g_PlayerBoxName[playerid], 32, "%s", CompanyBoxes[boxid][boxName]);
-                g_PlayerBoxAmount[playerid] = CompanyBoxes[boxid][boxAmount];
-                SetPlayerAttachedObject(playerid, 0, 2912, 6, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0);
-                ApplyAnimation(playerid, "CARRY", "crry_prtial", 4.1, true, true, true, true, 0);
-
-                DestroyDynamicObject(CompanyBoxes[boxid][boxObjID]);
-                CompanyBoxes[boxid][boxObjID] = 0;
-                CompanyBoxes[boxid][boxName][0] = '\0';
-                CompanyBoxes[boxid][boxAmount] = 0;
-                CompanyBoxes[boxid][boxOwner] = 0;
-                CompanyBoxes[boxid][boxModel] = 0;
-                CompanyBoxes[boxid][boxLabelID] = Text3D:0;
-
-                SendClientMessage(playerid, -1, "Ban da nhat thung hang len tay!");
+                SendClientMessage(playerid, COLOR_RED, "Ban dang cam thung hang roi! Hay dat thung hang xuong truoc khi cam thung khac!");
                 return 1;
             }
+            
+            g_PlayerCarryingBox[playerid] = true;
+            g_PlayerBoxOwner[playerid] = playerid;
+            format(g_PlayerBoxName[playerid], 32, "%s", CompanyBoxes[boxid][boxName]);
+            g_PlayerBoxAmount[playerid] = CompanyBoxes[boxid][boxAmount];
+            
+            // Always use object 2969 for player boxes
+            SetPlayerAttachedObject(playerid, 0, 2969, 6, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0);
+            ApplyAnimation(playerid, "CARRY", "crry_prtial", 4.1, false, false, false, false, 0);
+
+            DestroyDynamicObject(CompanyBoxes[boxid][boxObjID]);
+            CompanyBoxes[boxid][boxObjID] = 0;
+            CompanyBoxes[boxid][boxName][0] = '\0';
+            CompanyBoxes[boxid][boxAmount] = 0;
+            CompanyBoxes[boxid][boxOwner] = 0;
+            CompanyBoxes[boxid][boxModel] = 0;
+            CompanyBoxes[boxid][boxTargetName][0] = '\0';
+            CompanyBoxes[boxid][boxLabelID] = Text3D:0;
+
+            SendClientMessage(playerid, -1, "Ban da nhat thung hang len tay!");
+            return 1;
         }
-    }
+    } 
     return 1;
 }
 
@@ -252,6 +473,60 @@ CMD:truckercompany(playerid, params[])
     ShowPlayerDialog(playerid, DIALOG_TRUCKER_COMPANY_MAIN, DIALOG_STYLE_LIST, "Trucker Company", str, "Chon", "Thoat");
     return 1;
 }
+
+CMD:mohang(playerid, params[])
+{
+    if(PlayerInfo[playerid][pAdmin] < 4)
+        return SendClientMessage(playerid, -1, "Ban khong co quyen su dung lenh nay!");
+    
+    new boxid = GetNearestCompanyBox(playerid);
+    if(boxid == -1)
+        return SendClientMessage(playerid, -1, "Ban khong dung gan thung hang nao!");
+    
+    if(CompanyBoxes[boxid][boxModel] != 3800)
+        return SendClientMessage(playerid, -1, "Chi co the mo thung hang loai to!");
+    
+    if(AdminOpenedBox[boxid])
+        return SendClientMessage(playerid, -1, "Thung hang nay da duoc mo roi!");
+    
+    if(CompanyBoxes[boxid][boxObjID] == 0)
+        return SendClientMessage(playerid, -1, "Khong the mo thung hang - thung hang khong ton tai tren dat!");
+    
+    ApplyAnimation(playerid, "BOMBER", "BOM_Plant", 4.1, false, false, false, false, 0);
+    
+    AdminOpenedBox[boxid] = true;
+    SendClientMessage(playerid, COLOR_LIGHTGREEN, "Ban da mo thung hang! Nguoi choi co the lay hang tu thung nay.");
+    
+    if(CompanyBoxes[boxid][boxLabelID] != Text3D:0)
+    {
+        DestroyDynamic3DTextLabel(CompanyBoxes[boxid][boxLabelID]);
+    }
+    new Float:bx, Float:by, Float:bz;
+    GetDynamicObjectPos(CompanyBoxes[boxid][boxObjID], bx, by, bz);
+    new label[128];
+    format(label, sizeof(label), "{00FF00}%s\n{FFFFFF}So luong: %d\n{00FF00}[OPEN]", 
+           CompanyBoxes[boxid][boxName], CompanyBoxes[boxid][boxAmount]);
+    CompanyBoxes[boxid][boxLabelID] = CreateDynamic3DTextLabel(label, 0xFFFFFFFF, bx, by, bz+1.0, 20.0);
+    
+    new Float:x, Float:y, Float:z;
+    GetDynamicObjectPos(CompanyBoxes[boxid][boxObjID], x, y, z);
+    new string[128];
+    format(string, sizeof(string), "Admin %s da mo thung hang %s! Ban co the den lay hang.", GetPlayerNameEx(playerid), CompanyBoxes[boxid][boxName]);
+    
+    foreach(new i : Player)
+    {
+        new Float:px, Float:py, Float:pz;
+        GetPlayerPos(i, px, py, pz);
+        if(GetDistanceBetweenCoords(x, y, z, px, py, pz) < 50.0)
+        {
+            SendClientMessage(i, COLOR_YELLOW, string);
+        }
+    }
+    
+    return 1;
+}
+
+
 
 
 hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
@@ -284,7 +559,7 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
                 }
                 case 4:
                 {
-                    ShowPlayerDialog(playerid, DIALOG_TRUCKER_COMPANY_BOX_STEP1, DIALOG_STYLE_INPUT, "Nhap PlayerID nguoi dat hang", "Nhap PlayerID:", "Tiep", "Huy");
+                    ShowPlayerDialog(playerid, DIALOG_TRUCKER_COMPANY_BOX_STEP1, DIALOG_STYLE_INPUT, "Nhap ten nguoi nhan", "Nhap ten nguoi nhan hang:", "Tiep", "Huy");
                     return 1;
                 }
                 case 5: 
@@ -444,11 +719,10 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
     }
     if(dialogid == DIALOG_TRUCKER_COMPANY_BOX_STEP1 && response)
     {
-        if(inputtext[0] == '\0') return SendClientMessage(playerid, -1, "Ban chua nhap PlayerID!");
-        new targetid = strval(inputtext);
-        if(targetid == INVALID_PLAYER_ID || !IsPlayerConnected(targetid))
-            return SendClientMessage(playerid, -1, "PlayerID khong hop le!");
-        g_BoxInputTarget[playerid] = targetid;
+        if(inputtext[0] == '\0') return SendClientMessage(playerid, -1, "Ban chua nhap ten nguoi nhan!");
+        if(strlen(inputtext) < 3) return SendClientMessage(playerid, -1, "Ten nguoi nhan phai co it nhat 3 ky tu!");
+        if(strlen(inputtext) > MAX_PLAYER_NAME-1) return SendClientMessage(playerid, -1, "Ten nguoi nhan qua dai!");
+        format(g_BoxInputTargetName[playerid], MAX_PLAYER_NAME, "%s", inputtext);
         ShowPlayerDialog(playerid, DIALOG_TRUCKER_COMPANY_BOX_TYPE, DIALOG_STYLE_LIST, "Chon loai hang", "Nguyen Lieu\nVat pham\nDung cu", "Tiep", "Huy");
         return 1;
     }
@@ -470,31 +744,33 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         new tenhang[32];
         format(tenhang, sizeof(tenhang), "%s", BoxTypeNames[loaihang]);
 
-        new Float:x, Float:y, Float:z, Float:angle;
-        GetPlayerPos(playerid, x, y, z);
-        GetPlayerFacingAngle(playerid, angle);
-
-        new Float:distance = 1.0;
-        new Float:ox = x + (distance * floatsin(-angle, degrees));
-        new Float:oy = y + (distance * floatcos(-angle, degrees));
-        new Float:oz = z;
-
-        new Float:groundZ = oz;
-        CA_FindZ_For2DCoord(ox, oy, groundZ);
+        // Calculate optimized ground placement position
+        new Float:ox, Float:oy, Float:oz;
+        CalculateGroundPlacement(playerid, ox, oy, oz);
 
         for(new i = 0; i < MAX_COMPANY_BOXES; i++)
         {
             if(CompanyBoxes[i][boxObjID] == 0)
             {
-                CompanyBoxes[i][boxObjID] = CreateDynamicObject(3799, ox, oy, groundZ, 0.0, 0.0, 0.0);
-                CompanyBoxes[i][boxModel] = 3799;
+                CompanyBoxes[i][boxObjID] = CreateDynamicObject(3800, ox, oy, oz, 0.0, 0.0, 0.0);
+                CompanyBoxes[i][boxModel] = 3800;
                 CompanyBoxes[i][boxOwner] = playerid;
                 CompanyBoxes[i][boxAmount] = amount;
+                format(CompanyBoxes[i][boxTargetName], MAX_PLAYER_NAME, "%s", g_BoxInputTargetName[playerid]);
                 format(CompanyBoxes[i][boxName], 32, "%s", tenhang);
 
                 new label[128];
-                format(label, sizeof(label), "{FFFF00}%s\n{FFFFFF}Nguoi dat: %s", tenhang, GetPlayerNameEx(playerid));
-                CompanyBoxes[i][boxLabelID] = CreateDynamic3DTextLabel(label, 0xFFFFFFFF, ox, oy, groundZ+1.0, 20.0);
+                new targetName[MAX_PLAYER_NAME];
+                if(strlen(CompanyBoxes[i][boxTargetName]) > 0)
+                {
+                    format(targetName, sizeof(targetName), "%s", CompanyBoxes[i][boxTargetName]);
+                }
+                else
+                {
+                    format(targetName, sizeof(targetName), "Khong co");
+                }
+                format(label, sizeof(label), "{FFFF00}%s\n{FFFFFF}So luong: %d\n{FFFFFF}Nguoi nhan: %s\n{FF0000}[CLOSED]", tenhang, amount, targetName);
+                CompanyBoxes[i][boxLabelID] = CreateDynamic3DTextLabel(label, 0xFFFFFFFF, ox, oy, oz+1.0, 20.0);
 
                 new str[1280];
                 format(str,sizeof(str),"Ban da dat hang %s (%d) cho cong ty trucker delivery.", tenhang, amount);
@@ -584,6 +860,9 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         TruckerVehicleBoxAmount[idx][listitem] = g_PlayerBoxAmount[playerid];
         format(TruckerVehicleBoxName[idx][listitem], 32, "%s", g_PlayerBoxName[playerid]);
 
+        // Animation for putting box into truck
+        ApplyAnimation(playerid, "BOMBER", "BOM_Plant", 4.1, false, false, false, false, 0);
+        
         RemovePlayerAttachedObject(playerid, 0);
         g_PlayerCarryingBox[playerid] = false;
         g_PlayerBoxOwner[playerid] = 0;
@@ -610,8 +889,8 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         g_PlayerBoxOwner[playerid] = playerid;
         format(g_PlayerBoxName[playerid], 32, "%s", TruckerVehicleBoxName[idx][listitem]);
         g_PlayerBoxAmount[playerid] = TruckerVehicleBoxAmount[idx][listitem];
-        SetPlayerAttachedObject(playerid, 0, 2912, 6, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0);
-        ApplyAnimation(playerid, "CARRY", "crry_prtial", 4.1, true, true, true, true, 0);
+        SetPlayerAttachedObject(playerid, 0, 2969, 6, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0);
+        ApplyAnimation(playerid, "CARRY", "crry_prtial", 4.1, false, false, false, false, 0);
 
         TruckerVehicleBoxType[idx][listitem] = 0;
         TruckerVehicleBoxAmount[idx][listitem] = 0;
@@ -631,7 +910,7 @@ stock PlayerHasBoxOnGround(playerid)
     {
         if(CompanyBoxes[i][boxObjID] != 0)
         {
-            if(CompanyBoxes[i][boxModel] == 2912 && CompanyBoxes[i][boxOwner] == playerid)
+            if(CompanyBoxes[i][boxModel] == 2969 && CompanyBoxes[i][boxOwner] == playerid)
             {
                 return 1;
             }
@@ -846,3 +1125,111 @@ stock GetNearestCompanyBox(playerid)
     }
     return -1;
 }
+
+// Simple and reliable ground placement like balo.pwn
+stock bool:CalculateGroundPlacement(playerid, &Float:ox, &Float:oy, &Float:oz)
+{
+    new Float:x, Float:y, Float:z, Float:angle;
+    GetPlayerPos(playerid, x, y, z);
+    GetPlayerFacingAngle(playerid, angle);
+
+    new Float:distance = 1.5; // Closer to player
+    ox = x + (distance * floatsin(-angle, degrees));
+    oy = y + (distance * floatcos(-angle, degrees));
+    oz = z - 1.0; // Lower ground placement for better positioning
+    
+    return true; // Always successful with this simple method
+}
+
+stock IsPlayerNearVehicle554(playerid, Float:range = 3.0)
+{
+    return 1; 
+}
+
+stock GetNearestVehicle554(playerid, Float:range = 3.0)
+{
+    new Float:px, Float:py, Float:pz;
+    GetPlayerPos(playerid, px, py, pz);
+    
+    new Float:vx, Float:vy, Float:vz;
+    GetVehiclePos(554, vx, vy, vz);
+    if(GetDistanceBetweenCoords(px, py, pz, vx, vy, vz) < range)
+    {
+        return 554; 
+    }
+    return INVALID_VEHICLE_ID;
+}
+
+stock IsPlayerNearSpecificVehicle(playerid, vehicleid, Float:range = 3.0)
+{
+    new Float:px, Float:py, Float:pz;
+    GetPlayerPos(playerid, px, py, pz);
+    
+    new Float:vx, Float:vy, Float:vz;
+    GetVehiclePos(vehicleid, vx, vy, vz);
+    
+    new Float:distance = GetDistanceBetweenCoords(px, py, pz, vx, vy, vz);
+    return (distance <= range);
+}
+
+stock PutBoxOnVehicle554(playerid, vehicleid)
+{
+    if(Vehicle554HasBox[vehicleid])
+    {
+        SendClientMessage(playerid, -1, "Xe nay da co thung hang roi!");
+        return 0;
+    }
+    
+    Vehicle554BoxObject[vehicleid] = CreateDynamicObject(3800, 0.0, 0.0, -1000.0, 0.0, 0.0, 0.0, -1, -1, -1, 300.0, 300.0);
+    AttachDynamicObjectToVehicle(Vehicle554BoxObject[vehicleid], vehicleid, 0.000, -2.158, -0.420, 0.000, 0.000, 0.000);
+
+    Vehicle554HasBox[vehicleid] = true;
+    Vehicle554BoxType[vehicleid] = 1; 
+    Vehicle554BoxAmount[vehicleid] = g_PlayerBoxAmount[playerid];
+    format(Vehicle554BoxName[vehicleid], 32, "%s", g_PlayerBoxName[playerid]);
+    
+    ApplyAnimation(playerid, "BOMBER", "BOM_Plant", 4.1, false, false, false, false, 0);
+    
+    RemovePlayerAttachedObject(playerid, 0);
+    g_PlayerCarryingBox[playerid] = false;
+    g_PlayerCarryingSpecialBox[playerid] = false;
+    g_PlayerBoxOwner[playerid] = 0;
+    g_PlayerBoxName[playerid][0] = 0;
+    g_PlayerBoxAmount[playerid] = 0;
+    return 1;
+}
+
+stock TakeBoxFromVehicle554(playerid, vehicleid)
+{
+    if(!Vehicle554HasBox[vehicleid])
+    {
+        SendClientMessage(playerid, -1, "Xe nay khong co thung hang!");
+        return 0;
+    }
+    
+    g_PlayerCarryingBox[playerid] = true;
+    g_PlayerCarryingSpecialBox[playerid] = true; 
+    g_PlayerBoxOwner[playerid] = playerid;
+    format(g_PlayerBoxName[playerid], 32, "%s", Vehicle554BoxName[vehicleid]);
+    g_PlayerBoxAmount[playerid] = Vehicle554BoxAmount[vehicleid];
+    SetPlayerAttachedObject(playerid, 0, SPECIAL_BOX_OBJECT, 6, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0);
+    ApplyAnimation(playerid, "CARRY", "crry_prtial", 4.1, false, false, false, false, 0);
+    
+    DestroyDynamicObject(Vehicle554BoxObject[vehicleid]);
+    Vehicle554BoxObject[vehicleid] = 0;
+    Vehicle554HasBox[vehicleid] = false;
+    Vehicle554BoxType[vehicleid] = 0;
+    Vehicle554BoxAmount[vehicleid] = 0;
+    Vehicle554BoxName[vehicleid][0] = '\0';
+    
+    if(PlayerInfo[playerid][pAdmin] >= 4)
+    {
+        SendClientMessage(playerid, COLOR_LIGHTGREEN, "Admin: Ban da lay thung hang tu xe 554! Co the dat xuong dat va dung /mohang de cho player lay.");
+    }
+    else
+    {
+        SendClientMessage(playerid, COLOR_LIGHTGREEN, "Ban da lay thung hang tu xe 554!");
+    }
+    return 1;
+}
+

@@ -194,16 +194,14 @@ stock g_mysql_Init()
 	fclose(fileHandle);
 
 	mysql_global_options(DUPLICATE_CONNECTIONS, true);
-	mysql_log(ERROR | WARNING); // Reduce logging overhead during init
+	mysql_log(ERROR | WARNING); 
 	
-	// Initialize per-connection options and apply
 	new MySQLOpt:mainOptions = mysql_init_options();
 	mysql_set_option(mainOptions, AUTO_RECONNECT, true);
 	mysql_set_option(mainOptions, MULTI_STATEMENTS, true);
-
+	
 	MainPipeline = mysql_connect(SQL_HOST, SQL_USER, SQL_PASS, SQL_DB, mainOptions);
 	
-	// MySQL R41-4 connected successfully
 
 	printf("[MySQL] (Main Pipeline R41-4) Connecting to %s...", SQL_HOST);
 	if(mysql_errno(MainPipeline) != 0)
@@ -217,7 +215,6 @@ stock g_mysql_Init()
 
 	if(ShopToggle == 1)
 	{
-		// Initialize per-connection options for shop pipeline
 		new MySQLOpt:shopOptions = mysql_init_options();
 		mysql_set_option(shopOptions, AUTO_RECONNECT, true);
 		mysql_set_option(shopOptions, MULTI_STATEMENTS, true);
@@ -234,7 +231,6 @@ stock g_mysql_Init()
 		else print("[MySQL] (ShopPipeline) Connection successful toward MySQL Database Server!");
 	}
 	
-	// Increase delay to allow MySQL connection to stabilize
 	SetTimer("DelayedInitiateGamemode", 1000, false);
 
 	return 1;
@@ -699,6 +695,7 @@ public OnQueryFinish(Cache:resultid, extraid, handleid)
 					cache_get_value_name(row,  "GVIPExVoucher", szResult); PlayerInfo[extraid][pGVIPExVoucher] = strval(szResult);		
 					cache_get_value_name(row,  "VIPSellable", szResult); PlayerInfo[extraid][pVIPSellable] = strval(szResult);	
 					cache_get_value_name(row,  "ReceivedPrize", szResult); PlayerInfo[extraid][pReceivedPrize] = strval(szResult);
+					cache_get_value_name(row,  "InventoryData", PlayerInfo[extraid][pInventoryData]);
 					
 					GetPartnerName(extraid);
 					IsEmailPending(extraid, PlayerInfo[extraid][pId], PlayerInfo[extraid][pEmail]);
@@ -830,7 +827,6 @@ public OnQueryFinish(Cache:resultid, extraid, handleid)
 				{
 					if(i >= MAX_PLAYERTOYS)
 						break;
-				
 					new szResult[32];
 					
 					cache_get_value_name(i, "id", szResult);
@@ -880,7 +876,7 @@ public OnQueryFinish(Cache:resultid, extraid, handleid)
 						PlayerToyInfo[extraid][i][ptSpecial] = strval(szResult);
 						
 						new szLog[128];
-						format(szLog, sizeof(szLog), "[TOYSLOAD] [User: %s(%i)] [Toy Model ID: %d] [Toy ID]", GetPlayerNameEx(extraid), PlayerInfo[extraid][pId], PlayerToyInfo[extraid][i][ptModelID], PlayerToyInfo[extraid][i][ptID]);
+						format(szLog, sizeof(szLog), "[TOYSLOAD] [User: %s(%i)] [Toy Model ID: %d] [Toy ID]", GetPlayerNameEx(extraid), PlayerInfo[extraid][pId], PlayerToyInfo[extraid][i][ptModelID]);
 						Log("logs/toydebug.log", szLog);
 					}
 					else
@@ -1374,7 +1370,7 @@ stock g_mysql_CreateAccount(playerid, const accountPassword[])
 	new passbuffer[129];
 	WP_Hash(passbuffer, sizeof(passbuffer), accountPassword);
 
-	format(string, sizeof(string), "INSERT INTO `accounts` (`RegiDate`, `LastLogin`, `Username`, `Key`) VALUES (NOW(), NOW(), '%s','%s')", GetPlayerNameExt(playerid), passbuffer);
+	format(string, sizeof(string), "INSERT INTO `accounts` (`RegiDate`, `LastLogin`, `Username`, `Key`, `InventoryData`) VALUES (NOW(), NOW(), '%s','%s', '')", GetPlayerNameExt(playerid), passbuffer);
 	mysql_pquery(MainPipeline, string, "OnQueryFinish", "iii", REGISTER_THREAD, playerid, g_arrQueryHandle{playerid});
 	return 1;
 }
@@ -2092,10 +2088,32 @@ stock SaveFamily(id) {
 		`Gun8`=%d, \
 		`Gun9`=%d, \
 		`Gun10`=%d, \
+		`Gun11`=%d, \
+		`Gun12`=%d, \
+		`Gun13`=%d, \
+		`Gun14`=%d, \
+		`Gun15`=%d, \
+		`Gun16`=%d, \
+		`Gun17`=%d, \
+		`Gun18`=%d, \
+		`Gun19`=%d, \
+		`Gun20`=%d, \
+		`Gun21`=%d, \
+		`Gun22`=%d, \
+		`Gun23`=%d, \
+		`Gun24`=%d, \
+		`Gun25`=%d, \
+		`Gun26`=%d, \
+		`Gun27`=%d, \
+		`Gun28`=%d, \
+		`Gun29`=%d, \
+		`Gun30`=%d, \
 		`GtObject`=%d, \
 		`MOTD1`='%s', \
 		`MOTD2`='%s', \
-		`MOTD3`='%s' \
+		`MOTD3`='%s', \
+		`Level`=%d, \
+		`MaxMembers`=%d \
 		WHERE `ID` = %d",
 		string,
 		FamilyInfo[id][FamilyMaxSkins],
@@ -2119,10 +2137,32 @@ stock SaveFamily(id) {
 		FamilyInfo[id][FamilyGuns][7],
 		FamilyInfo[id][FamilyGuns][8],
 		FamilyInfo[id][FamilyGuns][9],
+		FamilyInfo[id][FamilyGuns][10],
+		FamilyInfo[id][FamilyGuns][11],
+		FamilyInfo[id][FamilyGuns][12],
+		FamilyInfo[id][FamilyGuns][13],
+		FamilyInfo[id][FamilyGuns][14],
+		FamilyInfo[id][FamilyGuns][15],
+		FamilyInfo[id][FamilyGuns][16],
+		FamilyInfo[id][FamilyGuns][17],
+		FamilyInfo[id][FamilyGuns][18],
+		FamilyInfo[id][FamilyGuns][19],
+		FamilyInfo[id][FamilyGuns][20],
+		FamilyInfo[id][FamilyGuns][21],
+		FamilyInfo[id][FamilyGuns][22],
+		FamilyInfo[id][FamilyGuns][23],
+		FamilyInfo[id][FamilyGuns][24],
+		FamilyInfo[id][FamilyGuns][25],
+		FamilyInfo[id][FamilyGuns][26],
+		FamilyInfo[id][FamilyGuns][27],
+		FamilyInfo[id][FamilyGuns][28],
+		FamilyInfo[id][FamilyGuns][29],
 		FamilyInfo[id][gtObject],
 		g_mysql_ReturnEscaped(FamilyMOTD[id][0], MainPipeline),
 		g_mysql_ReturnEscaped(FamilyMOTD[id][1], MainPipeline),
 		g_mysql_ReturnEscaped(FamilyMOTD[id][2], MainPipeline),
+		FamilyInfo[id][FamilyLevel],
+		FamilyInfo[id][FamilyMaxMembers],
 		id
 	);
 
@@ -3093,6 +3133,7 @@ stock g_mysql_SaveAccount(playerid)
 	SavePlayerInteger(query, GetPlayerSQLId(playerid), "GVIPExVoucher", PlayerInfo[playerid][pGVIPExVoucher]);
 	SavePlayerInteger(query, GetPlayerSQLId(playerid), "VIPSellable", PlayerInfo[playerid][pVIPSellable]);
 	SavePlayerInteger(query, GetPlayerSQLId(playerid), "ReceivedPrize", PlayerInfo[playerid][pReceivedPrize]);
+	SavePlayerString(query, GetPlayerSQLId(playerid), "InventoryData", PlayerInfo[playerid][pInventoryData]);
 	
 	MySQLUpdateFinish(query, GetPlayerSQLId(playerid));
 	return 1;
@@ -4350,6 +4391,10 @@ public OnLoadFamilies()
 		cache_get_value_name(i, "Leader", FamilyInfo[famid][FamilyLeader], MAX_PLAYER_NAME);
 		cache_get_value_name(i, "Bank", tmp); FamilyInfo[famid][FamilyBank] = strval(tmp);
 		cache_get_value_name(i, "Cash", tmp); FamilyInfo[famid][FamilyCash] = strval(tmp);
+		cache_get_value_name(i, "Level", tmp); 
+		FamilyInfo[famid][FamilyLevel] = (strlen(tmp) > 0) ? strval(tmp) : 1;
+		cache_get_value_name(i, "MaxMembers", tmp); 
+		FamilyInfo[famid][FamilyMaxMembers] = (strlen(tmp) > 0) ? strval(tmp) : 20;
 		cache_get_value_name(i, "FamilyUSafe", tmp); FamilyInfo[famid][FamilyUSafe] = strval(tmp);
 		cache_get_value_name(i, "FamilySafeX", tmp); FamilyInfo[famid][FamilySafe][0] = floatstr(tmp);
 		cache_get_value_name(i, "FamilySafeY", tmp); FamilyInfo[famid][FamilySafe][1] = floatstr(tmp);
@@ -4402,13 +4447,16 @@ public OnLoadFamilies()
 	        format(column,sizeof(column), "Skin%d", j+1);
 	        cache_get_value_name(i, column, tmp); FamilyInfo[famid][FamilySkins][j] = strval(tmp);
 	    }
-	    for (new j; j < 10; j++) {
+	    for (new j; j < 30; j++) {
 	        format(column,sizeof(column), "Gun%d", j+1);
 	        cache_get_value_name(i, column, tmp); FamilyInfo[famid][FamilyGuns][j] = strval(tmp);
 	    }
 		if(FamilyInfo[famid][FamilyUSafe] > 0)
 		{
 			FamilyInfo[famid][FamilyPickup] = CreateDynamicPickup(1239, 23, FamilyInfo[famid][FamilySafe][0], FamilyInfo[famid][FamilySafe][1], FamilyInfo[famid][FamilySafe][2], .worldid = FamilyInfo[famid][FamilySafeVW], .interiorid = FamilyInfo[famid][FamilySafeInt]);
+			new string[1280];
+			format(string, sizeof(string), "%s\n{9E9E9E}Su dung {873D37}/glocker{9E9E9E} de mo", FamilyInfo[famid][FamilyName]);
+			FamilyInfo[famid][FamilyTextLabel] = CreateDynamic3DTextLabel(string, COLOR_YELLOW, FamilyInfo[famid][FamilySafe][0], FamilyInfo[famid][FamilySafe][1], FamilyInfo[famid][FamilySafe][2]+0.6, 4.0, .testlos = 1, .worldid = FamilyInfo[famid][FamilySafeVW], .interiorid = FamilyInfo[famid][FamilySafeInt]);
 		}
 		if(FamilyInfo[famid][FamilyEntrance][0] != 0.0 && FamilyInfo[famid][FamilyEntrance][1] != 0.0)
 		{
@@ -5612,7 +5660,7 @@ public OnShopOrder2(index, extraid)
 								ShowPlayerDialog(index, 0, DIALOG_STYLE_MSGBOX, "Shop Order Error", "This order has already been delivered", "OK", "");
 								return 1;
 							}
-				   			case 7: format(reason, sizeof(reason), "{FF0000}Cancelled");
+			   				case 7: format(reason, sizeof(reason), "{FF0000}Cancelled");
 						    case 8: format(reason, sizeof(reason), "{FF0000}Denied");
 						    case 9: format(reason, sizeof(reason), "{FF0000}Cancelled Reversal");
 						    case 10: format(reason, sizeof(reason), "{FF0000}Failed");
@@ -7271,19 +7319,6 @@ public ReferralSecurity(playerid)
 		}
 	}
 	return 1;
-}
-
-forward OnQueryCreateToy(playerid, toyslot);
-public OnQueryCreateToy(playerid, toyslot)
-{
-	PlayerToyInfo[playerid][toyslot][ptID] = mysql_insert_id(MainPipeline);
-	printf("Toy ID: %d", PlayerToyInfo[playerid][toyslot][ptID]);
-	
-	new szQuery[128];
-	format(szQuery, sizeof(szQuery), "UPDATE `toys` SET `modelid` = '%d' WHERE `id` = '%d'", PlayerToyInfo[playerid][toyslot][ptID], PlayerToyInfo[playerid][toyslot][ptModelID]);
-	mysql_pquery(MainPipeline, szQuery, "OnQueryFinish", "i", SENDDATA_THREAD);
-	
-	g_mysql_SaveToys(playerid, toyslot);
 }
 
 forward OnStaffAccountCheck(playerid);

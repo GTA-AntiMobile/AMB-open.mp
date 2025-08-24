@@ -2323,6 +2323,9 @@ PayDay(i) {
 
 			GivePlayerCash(i, PlayerInfo[i][pPayCheck]);
 			
+			// Log salary payment
+			LogMoneyTransfer(i, INVALID_PLAYER_ID, PlayerInfo[i][pPayCheck], MONEY_TYPE_SALARY, "Nhan luong payday");
+			
 			/*if(month == 12 && day == 5)
 			{
 				if(++PlayerInfo[i][pFallIntoFun] == 5)
@@ -3132,7 +3135,7 @@ public InitiateGamemode()
 	SetTimer("GamemodeLoadingTimer", 50, false);
 	
 	print("[Server] Starting optimized staged loading process...");
-	printf("[Server] Estimated total loading time: ~15-25 seconds");
+	printf("[Server] Estimated total loading time:z ~15-25 seconds");
 	return 1;
 }
 
@@ -7905,6 +7908,7 @@ stock ClearFamily(family)
 	DestroyDynamic3DTextLabel( Text3D:FamilyInfo[family][FamilyEntranceText] );
 	DestroyDynamic3DTextLabel( Text3D:FamilyInfo[family][FamilyExitText] );
 	DestroyDynamicPickup( FamilyInfo[family][FamilyPickup] );
+	DestroyDynamic3DTextLabel( Text3D:FamilyInfo[family][FamilyTextLabel] );
 	SaveFamilies();
 	return 1;
 }
@@ -11315,7 +11319,29 @@ stock SetPlayerSpawn(playerid)
 		}
 		if(GetPVarInt(playerid, "Injured") == 1)
 		{
-		    SendEMSQueue(playerid,1);
+		    // Restore player to death position instead of hospital
+		    if(GetPVarType(playerid, "MedicX"))
+		    {
+		        SetPlayerPos(playerid, GetPVarFloat(playerid, "MedicX"), GetPVarFloat(playerid, "MedicY"), GetPVarFloat(playerid, "MedicZ"));
+		        SetPlayerVirtualWorld(playerid, GetPVarInt(playerid, "MedicVW"));
+		        SetPlayerInterior(playerid, GetPVarInt(playerid, "MedicInt"));
+		        SetPlayerHealth(playerid, 0.5);
+		        
+		        // Apply death animation
+		        ClearAnimations(playerid);
+		        ApplyAnimation(playerid, "KNIFE", "KILL_Knife_Ped_Die", 4.0, false, true, true, true, 0, 1);
+		        
+		        // Start death timer system
+		        StartDeathTimer(playerid);
+		        
+		        SendClientMessageEx(playerid, COLOR_RED, "{FF0000}[DEATH]{FFFFFF} Ban van dang chet! Doi cap cuu hoac chap nhan chet!");
+		        SendClientMessageEx(playerid, COLOR_YELLOW, "Su dung /acceptdeath de ve benh vien hoac doi medic cuu ban!");
+		    }
+		    else
+		    {
+		        // Fallback to EMS queue if no death position saved
+		        SendEMSQueue(playerid,1);
+		    }
 		    return 1;
 		}
 		if(GetPVarInt(playerid, "EventToken") == 1)
@@ -11324,23 +11350,6 @@ stock SetPlayerSpawn(playerid)
 			{
 				if(EventKernel[EventStaff][i] == playerid)
 				{
-					/*SetPlayerWeapons(playerid);
-					SetPlayerPos(playerid,EventFloats[playerid][1],EventFloats[playerid][2],EventFloats[playerid][3]);
-					//PlayerInfo[playerid][pInterior] = PlayerInfo[playerid][pInt];
-					SetPlayerVirtualWorld(playerid, EventLastVW[playerid]);
-					SetPlayerFacingAngle(playerid, EventFloats[playerid][0]);
-					SetPlayerInterior(playerid,EventLastInt[playerid]);
-					SetPlayerHealth(playerid, EventFloats[playerid][4]);
-					if(EventFloats[playerid][5] > 0) {
-						SetPlayerArmor(playerid, EventFloats[playerid][5]);
-					}
-					for(new d = 0; d < 6; d++)
-					{
-						EventFloats[playerid][d] = 0.0;
-					}
-					EventLastInt[playerid] = 0;
-					EventLastVW[playerid] = 0;
-					EventKernel[EventStaff][i] = INVALID_PLAYER_ID;*/
 					new Float:health, Float:armor;
 					ResetPlayerWeapons( playerid );
 					DeletePVar(playerid, "EventToken");
@@ -13583,6 +13592,8 @@ stock Float: FormatFloat(Float:number) {
 
 stock OnPlayerStatsUpdate(playerid) {
 	if(gPlayerLogged{playerid}) {
+		// Save inventory data before other stats
+		SavePlayerInventory(playerid);
 		if(!GetPVarType(playerid, "TempName") && !GetPVarInt(playerid, "EventToken") && GetPVarInt(playerid, "IsInArena") == -1) {
 		    new Float: Pos[4], Float: Health[2];
 			GetPlayerHealth(playerid, Health[0]);
@@ -24705,7 +24716,6 @@ forward ClaimShopItems(playerid); public ClaimShopItems(playerid)
 		format(string, sizeof(string), "Ban da yeu cau %s XP tu cua hang.", number_format(CpStore[playerid][cXP]));
 		SendClientMessageEx(playerid, COLOR_YELLOW, string);
 	}
-	// now we delete all the rows found by the result data.
 	new query[128];
 	format(query, sizeof(query), "DELETE FROM `cp_store` WHERE `User_Id`= %d", PlayerInfo[playerid][pId]);
 	mysql_function_query(MainPipeline, query, false, "OnQueryFinish", "ii", SENDDATA_THREAD, playerid);
@@ -24753,4 +24763,189 @@ stock FormatMoney(amount)
     result[resultPos] = '\0';
     
     return result;
+}
+
+// ======================= DEATH SYSTEM =======================
+new PlayerDeathTimer[MAX_PLAYERS];
+new PlayerDeathTimeLeft[MAX_PLAYERS];
+new bool:PlayerBeingRevived[MAX_PLAYERS];
+
+stock StartDeathTimer(playerid)
+{
+    if(!IsPlayerConnected(playerid)) return 0;
+    
+    // Kill existing timer
+    if(PlayerDeathTimer[playerid] != 0)
+    {
+        KillTimer(PlayerDeathTimer[playerid]);
+    }
+    
+    // Set default death time (200 seconds)
+    PlayerDeathTimeLeft[playerid] = 200;
+    PlayerBeingRevived[playerid] = false;
+    
+    // Start countdown timer
+    PlayerDeathTimer[playerid] = SetTimerEx("DeathCountdown", 1000, true, "i", playerid);
+    
+    // Show initial message
+    new string[128];
+    format(string, sizeof(string), "~r~DA CHET~n~~w~Thoi gian: ~y~%d giay", PlayerDeathTimeLeft[playerid]);
+    GameTextForPlayer(playerid, string, 2000, 3);
+    
+    return 1;
+}
+
+forward DeathCountdown(playerid);
+public DeathCountdown(playerid)
+{
+    if(!IsPlayerConnected(playerid) || GetPVarInt(playerid, "Injured") != 1)
+    {
+        // Player disconnected or no longer injured - stop timer
+        if(PlayerDeathTimer[playerid] != 0)
+        {
+            KillTimer(PlayerDeathTimer[playerid]);
+            PlayerDeathTimer[playerid] = 0;
+        }
+        return 1;
+    }
+    
+    PlayerDeathTimeLeft[playerid]--;
+    
+    // Update display every 10 seconds or last 10 seconds
+    if(PlayerDeathTimeLeft[playerid] % 10 == 0 || PlayerDeathTimeLeft[playerid] <= 10)
+    {
+        new string[128];
+        if(PlayerBeingRevived[playerid])
+        {
+            format(string, sizeof(string), "~g~DANG DUOC CUU~n~~w~Thoi gian: ~y~%d giay", PlayerDeathTimeLeft[playerid]);
+        }
+        else
+        {
+            format(string, sizeof(string), "~r~DA CHET~n~~w~Thoi gian: ~y~%d giay", PlayerDeathTimeLeft[playerid]);
+        }
+        GameTextForPlayer(playerid, string, 2000, 3);
+    }
+    
+    // Time up - force to hospital
+    if(PlayerDeathTimeLeft[playerid] <= 0)
+    {
+        ForcePlayerToHospital(playerid);
+        return 1;
+    }
+    
+    return 1;
+}
+
+stock ForcePlayerToHospital(playerid)
+{
+    if(!IsPlayerConnected(playerid)) return 0;
+    
+    // Stop death timer
+    if(PlayerDeathTimer[playerid] != 0)
+    {
+        KillTimer(PlayerDeathTimer[playerid]);
+        PlayerDeathTimer[playerid] = 0;
+    }
+    
+    // Clear death data
+    PlayerDeathTimeLeft[playerid] = 0;
+    PlayerBeingRevived[playerid] = false;
+    
+    // Remove injured status
+    DeletePVar(playerid, "Injured");
+    DeletePVar(playerid, "MedicX");
+    DeletePVar(playerid, "MedicY");
+    DeletePVar(playerid, "MedicZ");
+    DeletePVar(playerid, "MedicVW");
+    DeletePVar(playerid, "MedicInt");
+    
+    // Send to hospital using existing system
+    PlayerInfo[playerid][pHospital] = PlayerInfo[playerid][pInsurance];
+    SetPVarInt(playerid, "MedicBill", 1);
+    
+    SendClientMessageEx(playerid, COLOR_CYAN, "{00FFFF}[HOSPITAL]{FFFFFF} Ban da duoc dua den benh vien vi het thoi gian!");
+    
+    // Respawn player
+    SpawnPlayer(playerid);
+    
+    return 1;
+}
+
+stock StartRevivingPlayer(playerid, medicid = INVALID_PLAYER_ID)
+{
+    if(!IsPlayerConnected(playerid) || GetPVarInt(playerid, "Injured") != 1) return 0;
+    
+    // Set being revived state
+    PlayerBeingRevived[playerid] = true;
+    PlayerDeathTimeLeft[playerid] = 60; // 60 seconds when being revived
+    
+    // Messages
+    SendClientMessageEx(playerid, COLOR_GREEN, "{00FF00}[MEDIC]{FFFFFF} Ban dang duoc cuu! Thoi gian con lai: {FFFF00}60 giay{FFFFFF}");
+    
+    if(medicid != INVALID_PLAYER_ID)
+    {
+        new string[128];
+        format(string, sizeof(string), "{00FF00}[MEDIC]{FFFFFF} Ban da bat dau cuu %s!", GetPlayerNameEx(playerid));
+        SendClientMessageEx(medicid, COLOR_GREEN, string);
+    }
+    
+    return 1;
+}
+
+stock FullyRevivePlayer(playerid, medicid = INVALID_PLAYER_ID)
+{
+    if(!IsPlayerConnected(playerid) || GetPVarInt(playerid, "Injured") != 1) return 0;
+    
+    // Stop death timer
+    if(PlayerDeathTimer[playerid] != 0)
+    {
+        KillTimer(PlayerDeathTimer[playerid]);
+        PlayerDeathTimer[playerid] = 0;
+    }
+    
+    // Clear death data
+    PlayerDeathTimeLeft[playerid] = 0;
+    PlayerBeingRevived[playerid] = false;
+    
+    // Remove injured status
+    DeletePVar(playerid, "Injured");
+    DeletePVar(playerid, "MedicX");
+    DeletePVar(playerid, "MedicY");
+    DeletePVar(playerid, "MedicZ");
+    DeletePVar(playerid, "MedicVW");
+    DeletePVar(playerid, "MedicInt");
+    
+    // Restore health
+    SetPlayerHealth(playerid, 50.0);
+    
+    // Clear animations
+    ClearAnimations(playerid);
+    
+    // Messages
+    SendClientMessageEx(playerid, COLOR_GREEN, "{00FF00}[MEDIC]{FFFFFF} Ban da duoc cuu song thanh cong!");
+    
+    if(medicid != INVALID_PLAYER_ID)
+    {
+        new string[128];
+        format(string, sizeof(string), "{00FF00}[MEDIC]{FFFFFF} Ban da cuu song thanh cong %s!", GetPlayerNameEx(playerid));
+        SendClientMessageEx(medicid, COLOR_GREEN, string);
+        
+        // Give medic some money
+        GivePlayerCash(medicid, 500);
+        SendClientMessageEx(medicid, COLOR_GREEN, "Ban nhan duoc $500 vi da cuu song nguoi choi!");
+    }
+    
+    return 1;
+}
+
+stock GetPlayerDeathTimeLeft(playerid)
+{
+    if(!IsPlayerConnected(playerid)) return 0;
+    return PlayerDeathTimeLeft[playerid];
+}
+
+stock bool:IsPlayerBeingRevived(playerid)
+{
+    if(!IsPlayerConnected(playerid)) return false;
+    return PlayerBeingRevived[playerid];
 }

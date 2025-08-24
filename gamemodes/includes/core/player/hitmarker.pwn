@@ -55,31 +55,33 @@ stock GetBodyPartName(bodypart, bodyname[], len)
     return 1;
 }
 
-stock CreateHitMarkerTextDraw(playerid, slot, Float:damage, type, const shootername[] = "", bodypart = 3)
+stock CreateHitMarkerTextDraw(playerid, slot, Float:damage, type, const shootername[] = "", bodypart = 3, weaponid = 0)
 {
     #pragma unused type
     new string[128];
     new bodyname[16];
+    new weaponname[32];
     
     GetBodyPartName(bodypart, bodyname, sizeof(bodyname));
+    GetWeaponName(weaponid, weaponname, sizeof(weaponname));
     
     if(strlen(shootername) > 0)
     {
         if(damage >= 100.0)
-            format(string, sizeof(string), "~r~-%.0f ~w~(%s) ~y~%s", damage, shootername, bodyname);
+            format(string, sizeof(string), "~r~-%.0f ~w~(%s) ~y~%s ~g~%s", damage, shootername, bodyname, weaponname);
         else if(damage >= 10.0)
-            format(string, sizeof(string), "~r~-%.1f ~w~(%s) ~y~%s", damage, shootername, bodyname);
+            format(string, sizeof(string), "~r~-%.1f ~w~(%s) ~y~%s ~g~%s", damage, shootername, bodyname, weaponname);
         else
-            format(string, sizeof(string), "~r~-%.1f ~w~(%s) ~y~%s", damage, shootername, bodyname);
+            format(string, sizeof(string), "~r~-%.1f ~w~(%s) ~y~%s ~g~%s", damage, shootername, bodyname, weaponname);
     }
     else
     {
         if(damage >= 100.0)
-            format(string, sizeof(string), "~r~-%.0f ~y~%s", damage, bodyname);
+            format(string, sizeof(string), "~r~-%.0f ~y~%s ~g~%s", damage, bodyname, weaponname);
         else if(damage >= 10.0)
-            format(string, sizeof(string), "~r~-%.1f ~y~%s", damage, bodyname);
+            format(string, sizeof(string), "~r~-%.1f ~y~%s ~g~%s", damage, bodyname, weaponname);
         else
-            format(string, sizeof(string), "~r~-%.1f ~y~%s", damage, bodyname);
+            format(string, sizeof(string), "~r~-%.1f ~y~%s ~g~%s", damage, bodyname, weaponname);
     }
     
     HitMarkerData[playerid][slot][hm_TextDraw] = CreatePlayerTextDraw(playerid, 
@@ -87,7 +89,7 @@ stock CreateHitMarkerTextDraw(playerid, slot, Float:damage, type, const shootern
         HitMarkerData[playerid][slot][hm_CurrentY],
         string);
     
-    PlayerTextDrawLetterSize(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0.300, 1.400);
+    PlayerTextDrawLetterSize(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0.220, 1.000);
     PlayerTextDrawColor(playerid, HitMarkerData[playerid][slot][hm_TextDraw], -1);
     PlayerTextDrawSetShadow(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 1);
     PlayerTextDrawSetOutline(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 1);
@@ -174,16 +176,16 @@ stock GetAvailableHitMarkerSlot(playerid)
     return oldestSlot;
 }
 
-stock CreateHitMarker(playerid, Float:damage, type = HIT_TYPE_DAMAGE, const shootername[] = "", bodypart = 3)
+stock CreateHitMarker(playerid, Float:damage, type = HIT_TYPE_DAMAGE, const shootername[] = "", bodypart = 3, weaponid = 0)
 {
     if(!IsPlayerConnected(playerid))
         return 0;
     
     new slot = GetAvailableHitMarkerSlot(playerid);
     
-    new Float:baseX = 480.0;
-    new Float:baseY = 150.0;
-    new Float:offsetY = slot * 18.0;
+    new Float:baseX = 500.0;
+    new Float:baseY = 140.0;
+    new Float:offsetY = slot * 14.0; // Giảm khoảng cách giữa các hitmarker
     
     HitMarkerData[playerid][slot][hm_Active] = true;
     HitMarkerData[playerid][slot][hm_Damage] = damage;
@@ -197,23 +199,23 @@ stock CreateHitMarker(playerid, Float:damage, type = HIT_TYPE_DAMAGE, const shoo
     HitMarkerData[playerid][slot][hm_VelocityX] = 0.0;
     HitMarkerData[playerid][slot][hm_VelocityY] = 0.0;
     
-    CreateHitMarkerTextDraw(playerid, slot, damage, type, shootername, bodypart);
+    CreateHitMarkerTextDraw(playerid, slot, damage, type, shootername, bodypart, weaponid);
     
     PlayerHitMarkerCount[playerid]++;
     
     return 1;
 }
 
-stock CreateAttackerHitMarker(playerid, Float:damage, const targetname[], bodypart = 3)
+stock CreateAttackerHitMarker(playerid, Float:damage, const targetname[], bodypart = 3, weaponid = 0)
 {
     if(!IsPlayerConnected(playerid))
         return 0;
     
     new slot = GetAvailableHitMarkerSlot(playerid);
     
-    new Float:baseX = 160.0;
-    new Float:baseY = 150.0;
-    new Float:offsetY = slot * 18.0;
+    new Float:baseX = 140.0;
+    new Float:baseY = 140.0;
+    new Float:offsetY = slot * 14.0; // Giảm khoảng cách giữa các hitmarker
     
     HitMarkerData[playerid][slot][hm_Active] = true;
     HitMarkerData[playerid][slot][hm_Damage] = damage;
@@ -227,37 +229,39 @@ stock CreateAttackerHitMarker(playerid, Float:damage, const targetname[], bodypa
     HitMarkerData[playerid][slot][hm_VelocityX] = 0.0;
     HitMarkerData[playerid][slot][hm_VelocityY] = 0.0;
     
-    CreateAttackerHitMarkerTextDraw(playerid, slot, damage, targetname, bodypart);
+    CreateAttackerHitMarkerTextDraw(playerid, slot, damage, targetname, bodypart, weaponid);
     
     PlayerHitMarkerCount[playerid]++;
     
     return 1;
 }
 
-stock CreateAttackerHitMarkerTextDraw(playerid, slot, Float:damage, const targetname[], bodypart = 3)
+stock CreateAttackerHitMarkerTextDraw(playerid, slot, Float:damage, const targetname[], bodypart = 3, weaponid = 0)
 {
     new string[128];
     new bodyname[16];
+    new weaponname[32];
     
     GetBodyPartName(bodypart, bodyname, sizeof(bodyname));
+    GetWeaponName(weaponid, weaponname, sizeof(weaponname));
     
     if(strlen(targetname) > 0)
     {
         if(damage >= 100.0)
-            format(string, sizeof(string), "~y~%.0f ~w~(%s) ~g~%s", damage, targetname, bodyname);
+            format(string, sizeof(string), "~y~+%.0f ~w~(%s) ~g~%s ~b~%s", damage, targetname, bodyname, weaponname);
         else if(damage >= 10.0)
-            format(string, sizeof(string), "~y~%.1f ~w~(%s) ~g~%s", damage, targetname, bodyname);
+            format(string, sizeof(string), "~y~+%.1f ~w~(%s) ~g~%s ~b~%s", damage, targetname, bodyname, weaponname);
         else
-            format(string, sizeof(string), "~y~%.1f ~w~(%s) ~g~%s", damage, targetname, bodyname);
+            format(string, sizeof(string), "~y~+%.1f ~w~(%s) ~g~%s ~b~%s", damage, targetname, bodyname, weaponname);
     }
     else
     {
         if(damage >= 100.0)
-            format(string, sizeof(string), "~y~%.0f ~g~%s", damage, bodyname);
+            format(string, sizeof(string), "~y~+%.0f ~g~%s ~b~%s", damage, bodyname, weaponname);
         else if(damage >= 10.0)
-            format(string, sizeof(string), "~y~%.1f ~g~%s", damage, bodyname);
+            format(string, sizeof(string), "~y~+%.1f ~g~%s ~b~%s", damage, bodyname, weaponname);
         else
-            format(string, sizeof(string), "~y~%.1f ~g~%s", damage, bodyname);
+            format(string, sizeof(string), "~y~+%.1f ~g~%s ~b~%s", damage, bodyname, weaponname);
     }
     
     HitMarkerData[playerid][slot][hm_TextDraw] = CreatePlayerTextDraw(playerid, 
@@ -265,7 +269,7 @@ stock CreateAttackerHitMarkerTextDraw(playerid, slot, Float:damage, const target
         HitMarkerData[playerid][slot][hm_CurrentY], 
         string);
     
-    PlayerTextDrawLetterSize(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0.280, 1.300);
+    PlayerTextDrawLetterSize(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0.200, 0.950);
     PlayerTextDrawColor(playerid, HitMarkerData[playerid][slot][hm_TextDraw], -1);
     PlayerTextDrawSetShadow(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 1);
     PlayerTextDrawSetOutline(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 1);
@@ -376,7 +380,7 @@ hook OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
     new shootername[MAX_PLAYER_NAME];
     GetPlayerName(issuerid, shootername, sizeof(shootername));
     
-    CreateHitMarker(playerid, amount, HIT_TYPE_DAMAGE, shootername, bodypart);
+    CreateHitMarker(playerid, amount, HIT_TYPE_DAMAGE, shootername, bodypart, weaponid);
     StartHitMarkerTimer(playerid);
     
     return 1;
@@ -390,136 +394,9 @@ hook OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
     new targetname[MAX_PLAYER_NAME];
     GetPlayerName(damagedid, targetname, sizeof(targetname));
     
-    CreateAttackerHitMarker(playerid, amount, targetname, bodypart);
+    CreateAttackerHitMarker(playerid, amount, targetname, bodypart, weaponid);
     StartHitMarkerTimer(playerid);
     
     return 1;
 }
 
-CMD:testhit(playerid, params[])
-{
-    if(PlayerInfo[playerid][pAdmin] < 2)
-        return SendClientMessageEx(playerid, COLOR_GREY, "You don't have permission to use this command.");
-    
-    new Float:damage, shootername[MAX_PLAYER_NAME], bodypart;
-    if(sscanf(params, "fs[24]i", damage, shootername, bodypart))
-    {
-        SendClientMessageEx(playerid, COLOR_WHITE, "USAGE: /testhit [damage] [shooter_name] [bodypart]");
-        SendClientMessageEx(playerid, COLOR_GREY, "Bodyparts: 3=Than, 4=Mong, 5=Tay trai, 6=Tay phai, 7=Chan trai, 8=Chan phai, 9=Dau");
-        SendClientMessageEx(playerid, COLOR_GREY, "Example: /testhit 25.5 TestPlayer 9");
-        return 1;
-    }
-    
-    if(damage < 0.1 || damage > 999.9)
-        return SendClientMessageEx(playerid, COLOR_GREY, "Damage must be between 0.1 and 999.9");
-    
-    if(bodypart < 3 || bodypart > 9)
-        return SendClientMessageEx(playerid, COLOR_GREY, "Bodypart must be between 3-9");
-    
-    CreateHitMarker(playerid, damage, HIT_TYPE_DAMAGE, shootername, bodypart);
-    StartHitMarkerTimer(playerid);
-    
-    new string[128], bodyname[16];
-    GetBodyPartName(bodypart, bodyname, sizeof(bodyname));
-    format(string, sizeof(string), "Created hit marker: %.1f damage from %s at %s", damage, shootername, bodyname);
-    SendClientMessageEx(playerid, COLOR_LIGHTBLUE, string);
-    
-    return 1;
-}
-
-CMD:testhitdamage(playerid, params[])
-{
-    if(PlayerInfo[playerid][pAdmin] < 2)
-        return SendClientMessageEx(playerid, COLOR_GREY, "You don't have permission to use this command.");
-    
-    new Float:damage;
-    if(sscanf(params, "f", damage)) damage = 35.5;
-    
-    if(damage < 0.1 || damage > 999.9)
-        return SendClientMessageEx(playerid, COLOR_GREY, "Damage must be between 0.1 and 999.9");
-    
-    new bodypart = 3 + random(7);
-    
-    new testshooter[] = "TestShooter";
-    CreateHitMarker(playerid, damage, HIT_TYPE_DAMAGE, testshooter, bodypart);
-    StartHitMarkerTimer(playerid);
-    
-    new string[128], bodyname[16];
-    GetBodyPartName(bodypart, bodyname, sizeof(bodyname));
-    format(string, sizeof(string), "Created victim hit marker: %.1f damage at %s", damage, bodyname);
-    SendClientMessageEx(playerid, COLOR_LIGHTBLUE, string);
-    
-    return 1;
-}
-
-CMD:testattackerhit(playerid, params[])
-{
-    if(PlayerInfo[playerid][pAdmin] < 2)
-        return SendClientMessageEx(playerid, COLOR_GREY, "You don't have permission to use this command.");
-    
-    new Float:damage;
-    if(sscanf(params, "f", damage)) damage = 35.5;
-    
-    if(damage < 0.1 || damage > 999.9)
-        return SendClientMessageEx(playerid, COLOR_GREY, "Damage must be between 0.1 and 999.9");
-    
-    new bodypart = 3 + random(7);
-    
-    new testtarget[] = "TestTarget";
-    CreateAttackerHitMarker(playerid, damage, testtarget, bodypart);
-    StartHitMarkerTimer(playerid);
-    
-    new string[128], bodyname[16];
-    GetBodyPartName(bodypart, bodyname, sizeof(bodyname));
-    format(string, sizeof(string), "Created attacker hit marker: %.1f damage at %s", damage, bodyname);
-    SendClientMessageEx(playerid, COLOR_YELLOW, string);
-    
-    return 1;
-}
-
-CMD:testbothhit(playerid, params[])
-{
-    if(PlayerInfo[playerid][pAdmin] < 2)
-        return SendClientMessageEx(playerid, COLOR_GREY, "You don't have permission to use this command.");
-    
-    new Float:damage;
-    if(sscanf(params, "f", damage)) damage = 35.5;
-    
-    if(damage < 0.1 || damage > 999.9)
-        return SendClientMessageEx(playerid, COLOR_GREY, "Damage must be between 0.1 and 999.9");
-    
-    new bodypart = 3 + random(7);
-    
-    new testshooter[] = "TestShooter";
-    CreateHitMarker(playerid, damage, HIT_TYPE_DAMAGE, testshooter, bodypart);
-    
-    new testtarget[] = "TestTarget";
-    CreateAttackerHitMarker(playerid, damage, testtarget, bodypart);
-    
-    StartHitMarkerTimer(playerid);
-    
-    new string[128], bodyname[16];
-    GetBodyPartName(bodypart, bodyname, sizeof(bodyname));
-    format(string, sizeof(string), "Created both hit markers: %.1f damage at %s", damage, bodyname);
-    SendClientMessageEx(playerid, COLOR_LIGHTGREEN, string);
-    
-    return 1;
-}
-
-CMD:testrapid(playerid, params[])
-{
-    if(PlayerInfo[playerid][pAdmin] < 2)
-        return SendClientMessageEx(playerid, COLOR_GREY, "You don't have permission to use this command.");
-    
-    new testshooter[] = "RapidShooter";
-    CreateHitMarker(playerid, 25.5, HIT_TYPE_DAMAGE, testshooter, 9);
-    CreateHitMarker(playerid, 31.2, HIT_TYPE_DAMAGE, testshooter, 3);
-    CreateHitMarker(playerid, 28.8, HIT_TYPE_DAMAGE, testshooter, 5);
-    CreateHitMarker(playerid, 22.3, HIT_TYPE_DAMAGE, testshooter, 7);
-    CreateHitMarker(playerid, 35.1, HIT_TYPE_DAMAGE, testshooter, 3);
-    
-    StartHitMarkerTimer(playerid);
-    SendClientMessageEx(playerid, COLOR_YELLOW, "Created rapid fire hit markers on RIGHT SIDE - clear aiming view!");
-    
-    return 1;
-}

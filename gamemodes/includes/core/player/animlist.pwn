@@ -7,8 +7,6 @@
 new gPlayerUsingLoopingAnim[MAX_PLAYERS];
 new gPlayerAnimLibsPreloaded[MAX_PLAYERS];
 
-new Text:txtAnimHelper;
-
 //-------------------------------------------------
 
 PlayAnim(playerid, const animlib[], const animname[], Float:fDelta, bool:loop, bool:lockx, bool:locky, bool:freeze, time, bool:forcesync)
@@ -20,7 +18,6 @@ PlayAnimEx(playerid, const animlib[], const animname[], Float:fDelta, bool:loop,
 {
 	gPlayerUsingLoopingAnim[playerid] = 1;
 	ApplyAnimation(playerid, animlib, animname, fDelta, loop, lockx, locky, freeze, time, forcesync);
-	TextDrawShowForPlayer(playerid,txtAnimHelper);
 }
 
 StopLoopingAnim(playerid)
@@ -85,7 +82,6 @@ hook OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
 	if(IsKeyJustDown(KEY_SPRINT,newkeys,oldkeys))
 	{
 	    StopLoopingAnim(playerid);
-        TextDrawHideForPlayer(playerid,txtAnimHelper);
     }
     return 1;
 }
@@ -97,7 +93,6 @@ hook OnPlayerDeath(playerid, killerid, reason)
 	if(gPlayerUsingLoopingAnim[playerid])
 	{
         gPlayerUsingLoopingAnim[playerid] = 0;
-        TextDrawHideForPlayer(playerid,txtAnimHelper);
 	}
 	return 1;
 }
