@@ -59,7 +59,7 @@
 #define YSI_NO_CACHE_MESSAGE
 #define YSI_NO_HEAP_MALLOC
 #define YSI_NO_MODE_CACHE
-#define YSI_NO_MASTER_INIT  
+#define YSI_NO_MASTER_INIT
 #define YSI_NO_SCRIPT_INIT
 
 #include <YSI\YSI_Data\y_bit>
@@ -73,6 +73,9 @@
 #include <easyDialog>
 #include <DialogCenter>
 #include <MemoryPluginVersion>
+
+// Model Loaders - Load early
+#include "../include/modelLoaders.pwn"
 
 #if defined SOCKET_ENABLED
 	#include <socket>
@@ -91,7 +94,7 @@
 #include "./includes/streamer.pwn"
 #include "./includes/OnDialogResponse.pwn"
 /*================== Vehicle Systems ==================*/
-#include "./includes/core/vehicle/cv.pwn"
+#include "./includes/core/vehicle/custom_vehicles.pwn"
 #include "./includes/commands.pwn"
 
 /*================== Core Modules ==================*/
@@ -128,47 +131,13 @@ public OnGameModeInit()
     print("|                                            |");
     print("|       Copyright  2024 AMB Team             |");
     print("|____________________________________________|");
-    
+
     SetCrashDetectLongCallTime(60000000);
-    
-    // Initialize Custom Vehicle System
-    InitCustomVehicleSystem();
-    
-    SetTimer("LoadCustomModels", 100, false);
-    
+
+    // Load tất cả models (vehicles, skins, simple objects) từ config files
+    LoadCustomModelsFromConfig();
+
     g_mysql_Init();
-    return 1;
-}
-
-forward LoadCustomModels();
-public LoadCustomModels()
-{
-    AddSimpleModel(-1, 19379, -2001, "/Server/object.dff", "/Server/LoginPanel.txd");
-    AddSimpleModel(-1, 19379, -2003, "/Server/object.dff", "/Server/GPS.txd");
-
-    AddCharModel(2, 20001, "/skin/dylan.dff", "/skin/dylan.txd");
-    AddCharModel(155, 20002, "/skin/brian.dff", "/skin/brian.txd");
-    AddCharModel(280, 20003, "/skin/lapd1.dff", "/skin/lapd1.txd");
-    AddCharModel(287, 20004, "/skin/conmemay.dff", "/skin/conmemay.txd");
-    //army
-    AddCharModel(287, 20005, "/skin/army/army1.dff", "/skin/army/army1.txd");
-    AddCharModel(286, 20006, "/skin/army/fbi1.dff", "/skin/army/fbi1.txd");
-    AddCharModel(277, 20007, "/skin/army/lafd1-1.dff", "/skin/army/lafd1-1.txd");
-    AddCharModel(280, 20008, "/skin/army/lapd1-1.dff", "/skin/army/lapd1-1.txd");
-    AddCharModel(284, 20009, "/skin/army/lapdm1-1.dff", "/skin/army/lapdm1-1.txd");
-    AddCharModel(278, 20010, "/skin/army/lvfd1-1.dff", "/skin/army/lvfd1-1.txd");
-    AddCharModel(282, 20011, "/skin/army/lvpd1-1.dff", "/skin/army/lvpd1-1.txd");
-    AddCharModel(279, 20012, "/skin/army/sffd1-1.dff", "/skin/army/sffd1-1.txd");
-    AddCharModel(281, 20013, "/skin/army/sfpd1-1.dff", "/skin/army/sfpd1-1.txd");
-    AddCharModel(285, 20014, "/skin/army/swat1.dff", "/skin/army/swat1.txd");
-    
-    // Load Custom Vehicle Models
-    printf("[MODELS] Loading custom vehicle models...");
-    AddVehicleModel(411, 30001, "Vehicle/lambor.dff", "Vehicle/lambor.txd");
-    AddVehicleModel(412, 30002, "Vehicle/m6.dff", "Vehicle/m6.txd");
-    AddVehicleModel(413, 30003, "Vehicle/alpha.dff", "Vehicle/alpha.txd");
-
-    printf("[Models] Custom models loaded.");
     return 1;
 }
 
