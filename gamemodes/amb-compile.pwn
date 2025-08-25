@@ -74,7 +74,11 @@
 #include <DialogCenter>
 #include <MemoryPluginVersion>
 
-// Model Loaders - Load early
+#define MP3_CONVERTER_API "http://26.142.249.17:8081"
+#define API_KEY ""
+#include <Youtube>
+
+/*================== Model Loaders ==================*/
 #include "../include/modelLoaders.pwn"
 
 #if defined SOCKET_ENABLED
@@ -104,36 +108,45 @@
 #include "./includes/core/feature/message.pwn"
 #include "./includes/core/feature/gps_location.pwn"
 #include "./includes/core/feature/planted.pwn"
-#include "./includes/core/feature/Fly.pwn"
+#include "./includes/core/feature/flymode.pwn"
 /*================== Job Systems ==================*/
-#include "./includes/core/Jobs/TruckerDelivery/CompanyTrucker.pwn"
+#include "./includes/core/jobs/TruckerDelivery/CompanyTrucker.pwn"
 /*================== Game Systems ==================*/
+/*================== Family Systems ==================*/
+#include "./includes/core/family/main.pwn"
+#include "./includes/core/family/glocker.pwn"
 /*================== Player Systems ==================*/
-#include "./includes/core/player/Bank.pwn"
+#include "./includes/core/player/bank.pwn"
 #include "./includes/core/player/animlist.pwn"
 #include "./includes/core/player/hitmarker.pwn"
+#include "./includes/core/player/phone.pwn"
+#include "./includes/core/player/balo.pwn"
 /*================== Administration ==================*/
 #include "./includes/core/admin/players.pwn"
 #include "./includes/core/admin/faction.pwn"
+#include "./includes/core/admin/panelhistory.pwn"
 /*================== Police Systems ==================*/
+#include "./includes/core/police/checkvehicle.pwn"
 /*================== Vehicle Systems ==================*/
 #include "./includes/core/vehicle/engine_upgrade.pwn"
 #include "./includes/core/vehicle/dealership.pwn"
 #include "./includes/core/vehicle/speedo.pwn"
-/*================== Eric Systems ==================*/
+#include "./includes/core/vehicle/caraccident.pwn"
+#include "./includes/core/vehicle/music.pwn"
+/*================== Mapping Systems ==================*/
+#include "./includes/core/mapping/interior/dealership.pwn"
 main() {}
 
 public OnGameModeInit()
 {
     print("______________________________________________");
     print("|                                            |");
-    print("|        Anti-Mobile City Vietnamese         |");
-    print("|                                            |");
-    print("|       Copyright  2024 AMB Team             |");
+    print("|          AMB Team Vietnamese             	|");
+    print("|        Copyright 2024 AMB Team             |");
     print("|____________________________________________|");
-
-    SetCrashDetectLongCallTime(60000000);
-
+    
+    SetCrashDetectLongCallTime(120000000); // T?ng th?i gian long call l?n 2 ph?t
+    
     // Load tất cả models (vehicles, skins, simple objects) từ config files
     LoadCustomModelsFromConfig();
 

@@ -9570,11 +9570,20 @@ CMD:accept(playerid, params[])
 							SendClientMessageEx(playerid, COLOR_WHITE, "Ban khong the chap nhan dieu nay khi ban dang trong mot family.");
 						}
 						else {
-							PlayerInfo[playerid][pFMember] = InviteFamily[playerid];
+							new fam = InviteFamily[playerid];
+							if(FamilyInfo[fam][FamilyMaxMembers] <= 0) FamilyInfo[fam][FamilyMaxMembers] = 10;
+							if(FamilyInfo[fam][FamilyMembers] >= FamilyInfo[fam][FamilyMaxMembers])
+							{
+								SendClientMessageEx(playerid, COLOR_GREY, "Family da day slot thanh vien, hay lien he leader de nang cap.");
+								InviteOffer[playerid] = INVALID_PLAYER_ID;
+								InviteFamily[playerid] = INVALID_FAMILY_ID;
+								return 1;
+							}
+							PlayerInfo[playerid][pFMember] = fam;
 							PlayerInfo[playerid][pRank] = 0;
 							PlayerInfo[playerid][pDivision] = 0;
-							FamilyInfo[InviteFamily[playerid]][FamilyMembers] ++;
-							SaveFamily(InviteFamily[playerid]);
+							FamilyInfo[fam][FamilyMembers] ++;
+							SaveFamily(fam);
 							format(szMessage, sizeof(szMessage), "   Ban da chap nhan loi moi tham gia %s, ban duoc moi boi %s.", FamilyInfo[InviteFamily[playerid]][FamilyName], GetPlayerNameEx(InviteOffer[playerid]));
 							SendClientMessageEx(playerid, COLOR_LIGHTBLUE, szMessage);
 							format(szMessage, sizeof(szMessage), "   %s da chap nhan loi moi va tham gia %s.", GetPlayerNameEx(playerid),FamilyInfo[InviteFamily[playerid]][FamilyName]);
@@ -16003,6 +16012,9 @@ CMD:pay(playerid, params[])
 		OnPlayerStatsUpdate(playerid);
 		OnPlayerStatsUpdate(id);
 		SetPVarInt(playerid, "LastTransaction", gettime());
+		
+		// Log money transfer
+		LogMoneyTransfer(playerid, id, amount, MONEY_TYPE_GIVE, "Chuyen tien truc tiep");
 	}
 	else SendClientMessageEx(playerid, COLOR_GREY, "Nguoi do khong gan ban.");
 	return 1;
@@ -38849,6 +38861,8 @@ CMD:safedeposit(playerid, params[]) // TransferStorage(playerid, storageid, from
 				format(string, sizeof(string), "%s has deposited $%s into %s's safe", GetPlayerNameEx(playerid), number_format(amount), FamilyInfo[family][FamilyName]);
 				format(file, sizeof(file), "family_logs/%d/%d-%02d-%02d.log", family, year, month, day);
 				Log(file, string);
+				// Log money transfer
+				LogMoneyTransfer(playerid, INVALID_PLAYER_ID, amount, MONEY_TYPE_BUSINESS, "Gui tien vao family safe");
 			}
 			case 2: // Pot
 			{
@@ -38958,6 +38972,9 @@ CMD:safewithdraw(playerid, params[]) // TransferStorage(playerid, storageid, fro
 				{
 					SetPVarInt(playerid, "Special_FamilyID", family);
 					TransferStorage(playerid, -1, -1, -1, itemid, amount, -1, 5);
+					
+					// Log money transfer
+					LogMoneyTransfer(playerid, INVALID_PLAYER_ID, amount, MONEY_TYPE_BUSINESS, "Rut tien tu family safe");
 				}
 				else return SendClientMessageEx(playerid, COLOR_WHITE, "Your family safe does not have enough for you to withdraw!");
 			}

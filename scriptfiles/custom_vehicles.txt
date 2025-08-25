@@ -1,8 +1,0 @@
-# Custom Vehicle System Configuration File
-# Format: ModelID|BaseID|Name|DFFPath|TXDPath
-# ModelID: 20000-20100 (Custom range for tracking)
-# BaseID: 400-611 (SA-MP vehicle models - this is the actual vehicle model)
-# DFF/TXD: Custom skin files for the base model
-
-
-20006|411|Lamboghini|models/vehicle/lambo_aventador.dff|models/vehicle/lambo_aventador.txd

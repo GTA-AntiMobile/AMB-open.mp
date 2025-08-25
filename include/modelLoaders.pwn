@@ -14,12 +14,12 @@ stock LoadCustomModelsFromConfig()
     new skinLoaded = 0, skinFailed = 0; 
     new simpleLoaded = 0, simpleFailed = 0;
     
-    // Load Vehicles from cv.cfg
-    printf("[MODELS] Loading vehicles from cv.cfg...");
-    new File:vehicleFile = fopen("cv.cfg", io_read);
+    // Load Vehicles from custom_vehicles.cfg
+    printf("[MODELS] Loading vehicles from custom_vehicles.cfg...");
+    new File:vehicleFile = fopen("custom_vehicles.cfg", io_read);
     if(!vehicleFile)
     {
-        printf("[MODELS] ERROR: cv.cfg not found!");
+        printf("[MODELS] ERROR: custom_vehicles.cfg not found!");
     }
     else
     {

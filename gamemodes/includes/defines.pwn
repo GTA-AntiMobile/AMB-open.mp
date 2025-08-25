@@ -13,6 +13,8 @@ native WP_Hash(buffer[], len, const str[]);
 #define			INVALID_SAMP_ID				65535
 #define			WEB_SERVER					"26.142.249.17"
 #define			SAMP_WEB					"http://26.142.249.17:8081/"
+#define			WEB_SERVER					"26.142.249.17"
+#define			SAMP_WEB					"http://26.142.249.17:8081/"
 #define			XP_RATE						25 // XP Rates for jobs
 #define			XP_RATE_HOURLY				2 // XP Bounes per paycheck (LEVEL * XP_RATE * XP_RATE_HOURLY)
 
