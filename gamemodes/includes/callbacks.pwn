@@ -67,52 +67,13 @@ public OnVehicleSpawn(vehicleid) {
 	}
     TruckContents{vehicleid} = 0;
 	Vehicle_ResetData(vehicleid);
-	new
-		v;
 
-
-	foreach(new i: Player)
-	{
-		if((v = GetPlayerVehicle(i, vehicleid)) != -1) {
-			DestroyVehicle(vehicleid);
-
-			new
-				iVehicleID = CreateVehicle(PlayerVehicleInfo[i][v][pvModelId], PlayerVehicleInfo[i][v][pvPosX], PlayerVehicleInfo[i][v][pvPosY], PlayerVehicleInfo[i][v][pvPosZ], PlayerVehicleInfo[i][v][pvPosAngle],PlayerVehicleInfo[i][v][pvColor1], PlayerVehicleInfo[i][v][pvColor2], -1);
-
-            SetVehicleVirtualWorld(iVehicleID, PlayerVehicleInfo[i][v][pvVW]);
-            LinkVehicleToInterior(iVehicleID, PlayerVehicleInfo[i][v][pvInt]);
-
-			PlayerVehicleInfo[i][v][pvId] = iVehicleID;
-
-			Vehicle_ResetData(iVehicleID);
-			if(!isnull(PlayerVehicleInfo[i][v][pvPlate])) {
-				SetVehicleNumberPlate(iVehicleID, PlayerVehicleInfo[i][v][pvPlate]);
-			}
-			if(PlayerVehicleInfo[i][v][pvLocked] == 1) LockPlayerVehicle(i, iVehicleID, PlayerVehicleInfo[i][v][pvLock]);
-			ChangeVehiclePaintjob(iVehicleID, PlayerVehicleInfo[i][v][pvPaintJob]);
-			ChangeVehicleColours(iVehicleID, PlayerVehicleInfo[i][v][pvColor1], PlayerVehicleInfo[i][v][pvColor2]);
-			for(new m = 0; m < MAX_MODS; m++)
-			{
-				if (PlayerVehicleInfo[i][v][pvMods][m] >= 1000 && PlayerVehicleInfo[i][v][pvMods][m] <= 1193)
-				{
-					if (InvalidModCheck(PlayerVehicleInfo[i][v][pvModelId], PlayerVehicleInfo[i][v][pvMods][m]))
-					{
-						AddVehicleComponent(iVehicleID, PlayerVehicleInfo[i][v][pvMods][m]);
-					}
-					else
-					{
-						PlayerVehicleInfo[i][v][pvMods][m] = 0;
-					}
-				}
-			}
-			new string[128];
-			format(string, sizeof(string), "Your %s has been sent to the location at which you last parked it.", GetVehicleName(iVehicleID));
-			SendClientMessageEx(i, COLOR_GRAD1, string);
-		}
-		if(IsValidDynamicObject(CrateVehicleLoad[vehicleid][vForkObject]))
-	    {
-	    	DestroyDynamicObject(CrateVehicleLoad[vehicleid][vForkObject]);
-		}
+	// DISABLED: Old vehicle spawn system - now handled by new garage system
+	// The old system has been completely replaced by the new garage system
+	// This ensures no conflicts between old and new systems
+	if(IsValidDynamicObject(CrateVehicleLoad[vehicleid][vForkObject]))
+    {
+    	DestroyDynamicObject(CrateVehicleLoad[vehicleid][vForkObject]);
 	}
     CrateVehicleLoad[vehicleid][vForkLoaded] = 0;
 	for(new i = 0; i < sizeof(CrateInfo); i++)
@@ -128,6 +89,19 @@ public OnVehicleSpawn(vehicleid) {
 		    break;
 		}
     }
+    return 1;
+}
+
+hook WC_OnVehicleSpawn(vehicleid)
+{
+    #pragma unused vehicleid
+    return 1;
+}
+
+hook WC_OnVehicleDeath(vehicleid, killerid)
+{
+    #pragma unused vehicleid, killerid
+    return 1;
 }
 
 public OnVehicleMod(playerid, vehicleid, componentid) 
@@ -1177,55 +1151,35 @@ public OnPlayerPressButton(playerid, buttonid)
 }
 
 public OnEnterExitModShop( playerid, enterexit, interiorid ) {
-	if(!enterexit && GetPlayerVehicle(playerid, GetPlayerVehicleID(playerid)) > -1) UpdatePlayerVehicleMods(playerid, GetPlayerVehicle(playerid, GetPlayerVehicleID(playerid)));
+	new vehicleSlot = GetPlayerVehicle(playerid, GetPlayerVehicleID(playerid));
+	if(!enterexit && vehicleSlot > -1 && vehicleSlot < MAX_PLAYERVEHICLES) UpdatePlayerVehicleMods(playerid, vehicleSlot);
 	if(!enterexit && DynVeh[GetPlayerVehicleID(playerid)] != -1) UpdateGroupVehicleMods(GetPlayerVehicleID(playerid));
 }
 
 public OnVehiclePaintjob(playerid, vehicleid, paintjobid)
 {
-    if(GetPlayerVehicle(playerid, vehicleid) > -1)
+	new vehicleSlot = GetPlayerVehicle(playerid, vehicleid);
+	if(vehicleSlot > -1 && vehicleSlot < MAX_PLAYERVEHICLES)
 	{
-		PlayerVehicleInfo[playerid][GetPlayerVehicle(playerid, vehicleid)][pvPaintJob] = paintjobid;
+		PlayerVehicleInfo[playerid][vehicleSlot][pvPaintJob] = paintjobid;
 	}
-    return 1;
+	return 1;
 }
 
 public OnVehicleRespray(playerid, vehicleid, color1, color2)
 {
-    if(GetPlayerVehicle(playerid, vehicleid) > -1)
+	new vehicleSlot = GetPlayerVehicle(playerid, vehicleid);
+	if(vehicleSlot > -1 && vehicleSlot < MAX_PLAYERVEHICLES)
 	{
-		PlayerVehicleInfo[playerid][GetPlayerVehicle(playerid, vehicleid)][pvColor1] = color1;
-		PlayerVehicleInfo[playerid][GetPlayerVehicle(playerid, vehicleid)][pvColor2] = color2;
+		PlayerVehicleInfo[playerid][vehicleSlot][pvColor1] = color1;
+		PlayerVehicleInfo[playerid][vehicleSlot][pvColor2] = color2;
 	}
-    return 1;
+	return 1;
 }
 
 public OnPlayerClickTextDraw(playerid, Text:clickedid)
 {
-    if(GetPVarInt(playerid, "mS_ignore_next_esc") == 1) {
-		SetPVarInt(playerid, "mS_ignore_next_esc", 0);
-		return CallLocalFunction("MP_OPCTD", "ii", playerid, _:clickedid);
-	}
-   	if(GetPVarInt(playerid, "mS_list_active") == 0) return CallLocalFunction("MP_OPCTD", "ii", playerid, _:clickedid);
-
-	// Handle: They cancelled (with ESC)
-	if(clickedid == Text:INVALID_TEXT_DRAW) {
-		new listid = mS_GetPlayerCurrentListID(playerid);
-		if(listid == mS_CUSTOM_LISTID)
-		{
-			new extraid = GetPVarInt(playerid, "mS_custom_extraid");
-			mS_DestroySelectionMenu(playerid);
-			CallLocalFunction("OnPlayerModelSelectionEx", "dddd", playerid, 0, extraid, -1);
-			PlayerPlaySound(playerid, 1085, 0.0, 0.0, 0.0);
-		}
-		else
-		{
-			mS_DestroySelectionMenu(playerid);
-			CallLocalFunction("OnPlayerModelSelection", "dddd", playerid, 0, listid, -1);
-			PlayerPlaySound(playerid, 1085, 0.0, 0.0, 0.0);
-		}
-        return 1;
-	}
+    
 	return 0;
 }
 
@@ -1268,96 +1222,7 @@ public OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid)
         HideLoginPanel(playerid);
         CancelSelectTextDraw(playerid);
     }
-	if(GetPVarInt(playerid, "mS_list_active") == 1 || (GetTickCount()-GetPVarInt(playerid, "mS_list_time")) > 200)
-	{
-		new curpage = GetPVarInt(playerid, "mS_list_page");
 
-		// Handle: cancel button
-		if(playertextid == gCancelButtonTextDrawId[playerid]) {
-			new listID = mS_GetPlayerCurrentListID(playerid);
-			if(listID == mS_CUSTOM_LISTID)
-			{
-				new extraid = GetPVarInt(playerid, "mS_custom_extraid");
-				HideModelSelectionMenu(playerid);
-				CallLocalFunction("OnPlayerModelSelectionEx", "dddd", playerid, 0, extraid, -1);
-				PlayerPlaySound(playerid, 1085, 0.0, 0.0, 0.0);
-			}
-			else
-			{
-				HideModelSelectionMenu(playerid);
-				CallLocalFunction("OnPlayerModelSelection", "dddd", playerid, 0, listID, -1);
-				PlayerPlaySound(playerid, 1085, 0.0, 0.0, 0.0);
-			}
-			return 1;
-		}
-
-		// Handle: next button
-		if(playertextid == gNextButtonTextDrawId[playerid]) {
-			new listID = mS_GetPlayerCurrentListID(playerid);
-			if(listID == mS_CUSTOM_LISTID)
-			{
-				if(curpage < (mS_GetNumberOfPagesEx(playerid) - 1)) {
-					SetPVarInt(playerid, "mS_list_page", curpage + 1);
-					mS_ShowPlayerMPs(playerid);
-					mS_UpdatePageTextDraw(playerid);
-					PlayerPlaySound(playerid, 1083, 0.0, 0.0, 0.0);
-				} else {
-					PlayerPlaySound(playerid, 1085, 0.0, 0.0, 0.0);
-				}
-			}
-			else
-			{
-				if(curpage < (mS_GetNumberOfPages(listID) - 1)) {
-					SetPVarInt(playerid, "mS_list_page", curpage + 1);
-					mS_ShowPlayerMPs(playerid);
-					mS_UpdatePageTextDraw(playerid);
-					PlayerPlaySound(playerid, 1083, 0.0, 0.0, 0.0);
-				} else {
-					PlayerPlaySound(playerid, 1085, 0.0, 0.0, 0.0);
-				}
-			}
-			return 1;
-		}
-
-		// Handle: previous button
-		if(playertextid == gPrevButtonTextDrawId[playerid]) {
-			if(curpage > 0) {
-				SetPVarInt(playerid, "mS_list_page", curpage - 1);
-				mS_ShowPlayerMPs(playerid);
-				mS_UpdatePageTextDraw(playerid);
-				PlayerPlaySound(playerid, 1084, 0.0, 0.0, 0.0);
-			} else {
-				PlayerPlaySound(playerid, 1085, 0.0, 0.0, 0.0);
-			}
-			return 1;
-		}
-
-		// Search in the array of textdraws used for the items
-		new x=0;
-		while(x != mS_SELECTION_ITEMS) {
-			if(playertextid == gSelectionItems[playerid][x]) {
-				new listID = mS_GetPlayerCurrentListID(playerid);
-				if(listID == mS_CUSTOM_LISTID)
-				{
-					PlayerPlaySound(playerid, 1083, 0.0, 0.0, 0.0);
-					new item_id = gSelectionItemsTag[playerid][x];
-					new extraid = GetPVarInt(playerid, "mS_custom_extraid");
-					HideModelSelectionMenu(playerid);
-					CallLocalFunction("OnPlayerModelSelectionEx", "dddd", playerid, 1, extraid, item_id);
-					return 1;
-				}
-				else
-				{
-					PlayerPlaySound(playerid, 1083, 0.0, 0.0, 0.0);
-					new item_id = gSelectionItemsTag[playerid][x];
-					HideModelSelectionMenu(playerid);
-					CallLocalFunction("OnPlayerModelSelection", "dddd", playerid, 1, listID, item_id);
-					return 1;
-				}
-			}
-			x++;
-		}
-	}
 
 	new tableid = GetPVarInt(playerid, "pkrTableID")-1;
 	if(playertextid == PlayerPokerUI[playerid][38])
@@ -2386,9 +2251,7 @@ public OnPlayerConnect(playerid) {
 	for(new i = 0; i < MAX_BUSINESSSALES; i++) {
         Selected[playerid][i] = 0;
 	}
-	for(new x=0; x < mS_SELECTION_ITEMS; x++) {
-        gSelectionItems[playerid][x] = PlayerText:INVALID_TEXT_DRAW;
-	}
+
 
 	gHeaderTextDrawId[playerid] = PlayerText:INVALID_TEXT_DRAW;
     gBackgroundTextDrawId[playerid] = PlayerText:INVALID_TEXT_DRAW;
@@ -2400,6 +2263,7 @@ public OnPlayerConnect(playerid) {
     SpoofKill[playerid] = 0;
 	KillTime[playerid] = 0;
 	gItemAt[playerid] = 0;
+	
 	TruckUsed[playerid] = INVALID_VEHICLE_ID;
 	pDrunkLevelLast[playerid] = 0;
     pFPS[playerid] = 0;
@@ -2691,6 +2555,11 @@ public OnPlayerConnect(playerid) {
 
 public OnPlayerDisconnect(playerid, reason)
 {
+    if(playerid < 0 || playerid >= MAX_PLAYERS) {
+        printf("[ERROR] OnPlayerDisconnect called with invalid playerid: %d", playerid);
+        return 1;
+    }
+    
     if(!isnull(unbanip[playerid]))
 	{
 	    new string[26];
@@ -2698,170 +2567,14 @@ public OnPlayerDisconnect(playerid, reason)
 	    SendRconCommand(string);
 	}
 	KillTimer(logincheck[playerid]);
-	foreach(new i: Player) {
-		if(Spectating[i] > 0 && Spectate[i] == playerid) {
-			SetPVarInt(i, "SpecOff", 1);
-			Spectating[i] = 0;
-			Spectate[i] = INVALID_PLAYER_ID;
-			GettingSpectated[playerid] = INVALID_PLAYER_ID;
-			TogglePlayerSpectating(i, false);
-			SendClientMessageEx(i, COLOR_WHITE, "Nguoi choi ban dang theo doi da thoat khoi may chu.");
-		}
-		if(GetPVarType(i, "_dCheck") && GetPVarInt(i, "_dCheck") == playerid) {
-			DeletePVar(i, "_dCheck");
-			SendClientMessageEx(i, COLOR_WHITE, "Nguoi choi ban dang kiem tra da thoat khoi may chu.");
-		}	
-	}		
-	// Why save on people who haven't logged in!
+	SetTimerEx("DeferredSpectatorCleanup", 25, false, "i", playerid);		
 	if(gPlayerLogged{playerid} == 1)
 	{
 		g_mysql_RemoveDumpFile(GetPlayerSQLId(playerid));
 
 		if(HungerPlayerInfo[playerid][hgInEvent] == 1)
 		{
-			if(hgActive == 2)
-			{
-				if(hgPlayerCount == 3)
-				{
-					new szmessage[128];
-					format(szmessage, sizeof(szmessage), "** %s da dung thu ba trong su kien Hunger Games.", GetPlayerNameEx(playerid));
-					SendClientMessageToAll(COLOR_LIGHTBLUE, szmessage);
-						
-					SetPlayerHealth(playerid, HungerPlayerInfo[playerid][hgLastHealth]);
-					SetPlayerArmor(playerid, HungerPlayerInfo[playerid][hgLastArmour]);
-					SetPlayerVirtualWorld(playerid, HungerPlayerInfo[playerid][hgLastVW]);
-					SetPlayerInterior(playerid, HungerPlayerInfo[playerid][hgLastInt]);
-					SetPlayerPos(playerid, HungerPlayerInfo[playerid][hgLastPosition][0], HungerPlayerInfo[playerid][hgLastPosition][1], HungerPlayerInfo[playerid][hgLastPosition][2]);
-							
-					ResetPlayerWeapons(playerid);
-						
-					HungerPlayerInfo[playerid][hgInEvent] = 0;
-					hgPlayerCount--;
-					HideHungerGamesTextdraw(playerid);
-					PlayerInfo[playerid][pRewardDrawChance] += 10;
-					SendClientMessageEx(playerid, COLOR_LIGHTBLUE, "** Ban da nhan 10 Draw Chances trong su kien Fall Into Fun.");
-					
-					for(new w = 0; w < 12; w++)
-					{
-						PlayerInfo[playerid][pGuns][w] = HungerPlayerInfo[playerid][hgLastWeapon][w];
-						if(PlayerInfo[playerid][pGuns][w] > 0 && PlayerInfo[playerid][pAGuns][w] == 0)
-						{
-							GivePlayerValidWeapon(playerid, PlayerInfo[playerid][pGuns][w], 60000);
-						}
-					}
-				}
-				else if(hgPlayerCount == 2)
-				{
-					new szmessage[128];
-					format(szmessage, sizeof(szmessage), "** %s da dung thu hai trong su kien Hunger Games.", GetPlayerNameEx(playerid));
-					SendClientMessageToAll(COLOR_LIGHTBLUE, szmessage);
-						
-					SetPlayerHealth(playerid, HungerPlayerInfo[playerid][hgLastHealth]);
-					SetPlayerArmor(playerid, HungerPlayerInfo[playerid][hgLastArmour]);
-					SetPlayerVirtualWorld(playerid, HungerPlayerInfo[playerid][hgLastVW]);
-					SetPlayerInterior(playerid, HungerPlayerInfo[playerid][hgLastInt]);
-					SetPlayerPos(playerid, HungerPlayerInfo[playerid][hgLastPosition][0], HungerPlayerInfo[playerid][hgLastPosition][1], HungerPlayerInfo[playerid][hgLastPosition][2]);
-							
-					ResetPlayerWeapons(playerid);
-						
-					HungerPlayerInfo[playerid][hgInEvent] = 0;
-					hgPlayerCount--;
-					HideHungerGamesTextdraw(playerid);
-					PlayerInfo[playerid][pRewardDrawChance] += 25;
-					SendClientMessageEx(playerid, COLOR_LIGHTBLUE, "** Ban nhan duoc 25 Draw Chances trong su kien Fall Into Fun.");
-					
-					for(new w = 0; w < 12; w++)
-					{
-						PlayerInfo[playerid][pGuns][w] = HungerPlayerInfo[playerid][hgLastWeapon][w];
-						if(PlayerInfo[playerid][pGuns][w] > 0 && PlayerInfo[playerid][pAGuns][w] == 0)
-						{
-							GivePlayerValidWeapon(playerid, PlayerInfo[playerid][pGuns][w], 60000);
-						}
-					}
-						
-					for(new i = 0; i < MAX_PLAYERS; i++)
-					{
-						if(HungerPlayerInfo[i][hgInEvent] == 1)
-						{
-							format(szmessage, sizeof(szmessage), "** %s da dung vi tri dau tien trong su kien Hunger Games.", GetPlayerNameEx(i));
-							SendClientMessageToAll(COLOR_LIGHTBLUE, szmessage);
-								
-							SetPlayerHealth(i, HungerPlayerInfo[i][hgLastHealth]);
-							SetPlayerArmor(i, HungerPlayerInfo[i][hgLastArmour]);
-							SetPlayerVirtualWorld(i, HungerPlayerInfo[i][hgLastVW]);
-							SetPlayerInterior(i, HungerPlayerInfo[i][hgLastInt]);
-							SetPlayerPos(i, HungerPlayerInfo[i][hgLastPosition][0], HungerPlayerInfo[i][hgLastPosition][1], HungerPlayerInfo[i][hgLastPosition][2]);
-									
-							ResetPlayerWeapons(i);
-								
-							HungerPlayerInfo[i][hgInEvent] = 0;
-							hgPlayerCount--;
-							HideHungerGamesTextdraw(i);
-							PlayerInfo[i][pRewardDrawChance] += 50;
-							SendClientMessageEx(i, COLOR_LIGHTBLUE, "** Ban nhan duoc 50 Draw Chances trong su kien Fall Into Fun.");
-							hgActive = 0;
-							
-							for(new w = 0; w < 12; w++)
-							{
-								PlayerInfo[i][pGuns][w] = HungerPlayerInfo[i][hgLastWeapon][w];
-								if(PlayerInfo[i][pGuns][w] > 0 && PlayerInfo[i][pAGuns][w] == 0)
-								{
-									GivePlayerValidWeapon(i, PlayerInfo[i][pGuns][w], 60000);
-								}
-							}
-						}
-					}
-					
-					for(new i = 0; i < 600; i++)
-					{
-						if(IsValidDynamic3DTextLabel(HungerBackpackInfo[i][hgBackpack3DText]))
-						{
-							DestroyDynamic3DTextLabel(HungerBackpackInfo[i][hgBackpack3DText]);
-						}
-						if(IsValidDynamicPickup(HungerBackpackInfo[i][hgBackpackPickupId]))
-						{
-							DestroyDynamicPickup(HungerBackpackInfo[i][hgBackpackPickupId]);
-						}
-						
-						HungerBackpackInfo[i][hgActiveEx] = 0;
-					}
-				}
-				else if(hgPlayerCount > 3)
-				{
-					SetPlayerHealth(playerid, HungerPlayerInfo[playerid][hgLastHealth]);
-					SetPlayerArmor(playerid, HungerPlayerInfo[playerid][hgLastArmour]);
-					SetPlayerVirtualWorld(playerid, HungerPlayerInfo[playerid][hgLastVW]);
-					SetPlayerInterior(playerid, HungerPlayerInfo[playerid][hgLastInt]);
-					SetPlayerPos(playerid, HungerPlayerInfo[playerid][hgLastPosition][0], HungerPlayerInfo[playerid][hgLastPosition][1], HungerPlayerInfo[playerid][hgLastPosition][2]);
-							
-					ResetPlayerWeapons(playerid);
-						
-					SendClientMessageEx(playerid, COLOR_LIGHTBLUE, "* Ban da bi chet trong su kien Hunger Games, chuc may man trong su kien sau.");
-						
-					HungerPlayerInfo[playerid][hgInEvent] = 0;
-					hgPlayerCount--;
-						
-					HideHungerGamesTextdraw(playerid);
-					
-					for(new w = 0; w < 12; w++)
-					{
-						PlayerInfo[playerid][pGuns][w] = HungerPlayerInfo[playerid][hgLastWeapon][w];
-						if(PlayerInfo[playerid][pGuns][w] > 0 && PlayerInfo[playerid][pAGuns][w] == 0)
-						{
-							GivePlayerValidWeapon(playerid, PlayerInfo[playerid][pGuns][w], 60000);
-						}
-					}
-				}
-				
-				new string[128];
-				format(string, sizeof(string), "Nguoi choi trong su kien: %d", hgPlayerCount);
-				for(new i = 0; i < MAX_PLAYERS; i++)
-				{
-					PlayerTextDrawSetString(i, HungerPlayerInfo[i][hgPlayerText], string);
-				}
-							
-				return true;
-			}
+			SetTimerEx("DeferredHungerGamesCleanup", 30, false, "i", playerid);
 		}
 		if (GetPVarInt(playerid, "_BikeParkourStage") > 0)
 		{
@@ -2934,12 +2647,7 @@ public OnPlayerDisconnect(playerid, reason)
 				}
 			}
 		}
-		#if defined zombiemode
-		if(GetPVarType(playerid, "pZombieBit"))
-		{
-            MakeZombie(playerid);
-		}
-		#endif
+
 		if(GetPVarType(playerid, "RentedVehicle")) {
 		    DestroyVehicle(GetPVarInt(playerid, "RentedVehicle"));
 		}
@@ -3012,21 +2720,22 @@ public OnPlayerDisconnect(playerid, reason)
 		if(gettime() >= PlayerInfo[playerid][pDrugsTime]) PlayerInfo[playerid][pDrugsTime] = 0;
 		if(gettime() >= PlayerInfo[playerid][pSexTime]) PlayerInfo[playerid][pSexTime] = 0;
 		
-		for(new i = 0; i < MAX_PLAYERVEHICLES; ++i) {
-			if(PlayerVehicleInfo[playerid][i][pvSpawned] == 1)
-			{
-				if(PlayerVehicleInfo[playerid][i][pvId] != INVALID_PLAYER_VEHICLE_ID && IsVehicleInTow(PlayerVehicleInfo[playerid][i][pvId]))
-				{
-					DetachTrailerFromVehicle(GetPlayerVehicleID(playerid));
-					PlayerVehicleInfo[playerid][i][pvImpounded] = 1;
-					PlayerVehicleInfo[playerid][i][pvSpawned] = 0;
-					SetVehiclePos(PlayerVehicleInfo[playerid][i][pvId], 0, 0, 0); // Attempted desync fix
-					DestroyVehicle(PlayerVehicleInfo[playerid][i][pvId]);
-					PlayerVehicleInfo[playerid][i][pvId] = INVALID_PLAYER_VEHICLE_ID;
-					g_mysql_SaveVehicle(playerid, i);
-				}
-			}
-		}
+		// DISABLED: Old vehicle system - now handled by new garage system
+		// for(new i = 0; i < MAX_PLAYERVEHICLES; ++i) {
+		// 	if(PlayerVehicleInfo[playerid][i][pvSpawned] == 1)
+		// 	{
+		// 		if(PlayerVehicleInfo[playerid][i][pvId] != INVALID_PLAYER_VEHICLE_ID && IsVehicleInTow(PlayerVehicleInfo[playerid][i][pvId]))
+		// 		{
+		// 			DetachTrailerFromVehicle(GetPlayerVehicleID(playerid));
+		// 			PlayerVehicleInfo[playerid][i][pvImpounded] = 1;
+		// 			PlayerVehicleInfo[playerid][i][pvSpawned] = 0;
+		// 			SetVehiclePos(PlayerVehicleInfo[playerid][i][pvId], 0, 0, 0); // Attempted desync fix
+		// 			DestroyVehicle(PlayerVehicleInfo[playerid][i][pvId]);
+		// 			PlayerVehicleInfo[playerid][i][pvId] = INVALID_PLAYER_VEHICLE_ID;
+		// 			g_mysql_SaveVehicle(playerid, i);
+		// 		}
+		// 	}
+		// }
 
 		new string[128];
 		switch(reason)
@@ -3254,53 +2963,12 @@ public OnPlayerDisconnect(playerid, reason)
 
 		OnPlayerStatsUpdate(playerid);
 		
-		new Float:pos[4];
-		new vehicleCount = 0;
+		// Defer heavy vehicle operations to prevent disconnect timeout
+		SetTimerEx("DeferredVehicleSave", 100, false, "i", playerid);
+		// Clean up player data to prevent memory leaks
+		CleanupPlayerData(playerid);
 		
-		for(new v = 0; v < MAX_PLAYERVEHICLES; v++) 
-		{
-			if(PlayerVehicleInfo[playerid][v][pvId] != INVALID_PLAYER_VEHICLE_ID)
-			{
-				vehicleCount++;
-				GetVehiclePos(PlayerVehicleInfo[playerid][v][pvId], pos[0], pos[1], pos[2]);
-				GetVehicleZAngle(PlayerVehicleInfo[playerid][v][pvId], pos[3]);
-				
-				PlayerVehicleInfo[playerid][v][pvPosX] = pos[0];
-				PlayerVehicleInfo[playerid][v][pvPosY] = pos[1];
-				PlayerVehicleInfo[playerid][v][pvPosZ] = pos[2];
-				PlayerVehicleInfo[playerid][v][pvPosAngle] = pos[3];
-				PlayerVehicleInfo[playerid][v][pvVW] = GetVehicleVirtualWorld(PlayerVehicleInfo[playerid][v][pvId]);
-				PlayerVehicleInfo[playerid][v][pvInt] = GetVehicleInterior(PlayerVehicleInfo[playerid][v][pvId]);
-				PlayerVehicleInfo[playerid][v][pvFuel] = VehicleFuel[PlayerVehicleInfo[playerid][v][pvId]];
-				
-				new Float:diffX = pos[0] - PlayerVehicleInfo[playerid][v][pvPosX];
-				new Float:diffY = pos[1] - PlayerVehicleInfo[playerid][v][pvPosY];
-				if(diffX < 0.0) diffX = -diffX;
-				if(diffY < 0.0) diffY = -diffY;
-				
-				if(PlayerVehicleInfo[playerid][v][pvCrashFlag] == 0 && (diffX > 1.0 || diffY > 1.0))
-				{
-					PlayerVehicleInfo[playerid][v][pvCrashFlag] = 1;
-					PlayerVehicleInfo[playerid][v][pvCrashVW] = PlayerVehicleInfo[playerid][v][pvVW];
-					PlayerVehicleInfo[playerid][v][pvCrashX] = pos[0];
-					PlayerVehicleInfo[playerid][v][pvCrashY] = pos[1];
-					PlayerVehicleInfo[playerid][v][pvCrashZ] = pos[2];
-					PlayerVehicleInfo[playerid][v][pvCrashAngle] = pos[3];
-				}
-			}
-		}
-		
-		if(vehicleCount > 0)
-		{
-			for(new v = 0; v < MAX_PLAYERVEHICLES; v++) 
-			{
-				if(PlayerVehicleInfo[playerid][v][pvId] != INVALID_PLAYER_VEHICLE_ID)
-				{
-					g_mysql_SaveVehicle(playerid, v);
-				}
-			}
-		}
-		UnloadPlayerVehicles(playerid);
+		// DISABLED: UnloadPlayerVehicles(playerid); // Now handled by new garage system
 		g_mysql_AccountOnline(playerid, 0);
 
 		for(new i = 0; i < MAX_REPORTS; i++)
@@ -3328,52 +2996,8 @@ public OnPlayerDisconnect(playerid, reason)
 				Calls[i][TimeToExpire] = 0;
 			}
 		}
-		foreach(new i: Player)
-		{
-		    if (GetPVarType(i, "hFind") && GetPVarInt(i, "hFind") == playerid)
-		    {
-		        SendClientMessageEx(i, COLOR_GREY, "Khong ket noi duoc voi may chu, ban co the thu lai sau.");
-		        DeletePVar(i, "hFind");
-				DisablePlayerCheckpoint(i);
-		    }
-		    if (GetPVarType(i, "Backup") && GetPVarInt(i, "Backup") == playerid)
-		    {
-		        SendClientMessageEx(i, COLOR_GREY, "Nguoi goi backup da thoat ket noi may chu.");
-		        DeletePVar(i, "Backup");
-		    }
-			if(TaxiAccepted[i] == playerid)
-			{
-				TaxiAccepted[i] = INVALID_PLAYER_ID;
-				GameTextForPlayer(i, "~w~Nguoi goi TAXI~n~~r~da thoat may chu", 5000, 1);
-				TaxiCallTime[i] = 0;
-				DisablePlayerCheckpoint(i);
-			}
-			if(EMSAccepted[i] == playerid)
-			{
-				EMSAccepted[i] = INVALID_PLAYER_ID;
-				GameTextForPlayer(i, "~w~Nguoi goi EMS~n~~r~da thoat may chu", 5000, 1);
-				EMSCallTime[i] = 0;
-				DisablePlayerCheckpoint(i);
-			}
-			if(BusAccepted[i] == playerid)
-			{
-				BusAccepted[i] = INVALID_PLAYER_ID;
-				GameTextForPlayer(i, "~w~Nguoi goi BUS~n~~r~da thoat may chu", 5000, 1);
-				BusCallTime[i] = 0;
-				DisablePlayerCheckpoint(i);
-			}
-			if(MedicAccepted[i] == playerid)
-			{
-				TaxiAccepted[playerid] = INVALID_PLAYER_ID; BusAccepted[playerid] = INVALID_PLAYER_ID; MedicAccepted[playerid] = INVALID_PLAYER_ID;
-				GameTextForPlayer(i, "~w~Nguoi goi MEDIC~n~~r~da thoat may chu", 5000, 1);
-				MedicCallTime[i] = 0;
-				DisablePlayerCheckpoint(i);
-			}
-			if(OrderAssignedTo[i] == playerid)
-			{
-			   OrderAssignedTo[i] = INVALID_PLAYER_ID;
-			}
-		}
+		// Defer heavy player notification operations to prevent disconnect timeout
+		SetTimerEx("DeferredPlayerNotifications", 50, false, "i", playerid);
 		if(TransportCost[playerid] > 0 && TransportDriver[playerid] != INVALID_PLAYER_ID)
 		{
 			if(IsPlayerConnected(TransportDriver[playerid]))
@@ -3908,7 +3532,8 @@ public OnPlayerDeath(playerid, killerid, reason)
 	SetPlayerColor(playerid,TEAM_HIT_COLOR);
 	if(IsValidDynamic3DTextLabel(RFLTeamN3D[playerid])) {
 		DestroyDynamic3DTextLabel(RFLTeamN3D[playerid]);
-	}	
+	}
+	
 	return 1;
 }
 
@@ -3964,6 +3589,7 @@ public OnVehicleDeath(vehicleid) {
 		}
     }
 	arr_Engine{vehicleid} = 0;
+	return 1;
 }
 
 public OnPlayerSpawn(playerid)
@@ -4054,6 +3680,7 @@ public OnPlayerSpawn(playerid)
 	SetPlayerToTeamColor(playerid);
 	IsSpawned[playerid] = 1;
 	SpawnKick[playerid] = 0;
+	
 	return 1;
 }
 
@@ -6839,7 +6466,7 @@ public OnUnoccupiedVehicleUpdate(vehicleid, playerid, passenger_seat)
 	return 1;
 }
 
-public OnPlayerModelSelectionEx(playerid, response, extraid, modelid)
+public OnPlayerModelSelectionEx(playerid, response, extraid, modelid, extralist_id)
 {
 	if(extraid == DYNAMIC_FAMILY_CLOTHES)
 	{

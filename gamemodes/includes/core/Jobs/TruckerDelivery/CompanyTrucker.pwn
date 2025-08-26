@@ -126,7 +126,7 @@ hook OnGameModeInit()
         AdminOpenedBox[i] = false;
     }
     
-    for(new i = 0; i < MAX_PLAYERS; i++)
+    foreach(new i: Player)
     {
         g_PlayerCarryingSpecialBox[i] = false;
     }

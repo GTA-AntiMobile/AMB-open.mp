@@ -1,13 +1,11 @@
 #include <YSI\YSI_Coding\y_hooks>
 
-// ===================== DEFINES =====================
 #define MAX_INVENTORY_SLOTS     100
 #define INVENTORY_ROWS          6
 #define INVENTORY_COLS          5
 #define MAX_ITEM_STACK          99
 #define INVALID_ITEM_ID         -1
 
-// Item Types - Su dung cau truc define da co
 #define INV_ITEM_TYPE_WEAPON        1
 #define INV_ITEM_TYPE_FOOD          2
 #define INV_ITEM_TYPE_DRINK         3
@@ -16,7 +14,6 @@
 #define INV_ITEM_TYPE_MATERIAL      6
 #define INV_ITEM_TYPE_OTHER         7
 
-// Dialog IDs cho inventory - su dung range trong defines.pwn
 #define DIALOG_INVENTORY_MAIN       (5200)
 #define DIALOG_INVENTORY_USE        (5201)
 #define DIALOG_INVENTORY_DROP       (5202)
@@ -26,15 +23,12 @@
 #define DIALOG_GIVEITEM_QUANTITY    (5206)
 #define DIALOG_DROP_QUANTITY        (5207)
 
-// Drop system defines
 #define MAX_DROPPED_ITEMS           500
 #define DROPPED_ITEM_OBJECT         19918
 
-// Pagination defines - Tang them slots (6 hang x 5 cot = 30 slots)
 #define SLOTS_PER_PAGE 30
 #define MAX_PAGES 4
 
-// ===================== ENUMS =====================
 enum E_ITEM_DATA {
     item_id,
     item_name[32],
@@ -66,14 +60,12 @@ enum E_INVENTORY_TEXTDRAWS {
     PlayerText:inv_use_btn_bg,
     PlayerText:inv_drop_btn,
     PlayerText:inv_drop_btn_bg,
-    // Phan trang
     PlayerText:inv_page_bg,
     PlayerText:inv_page_text,
     PlayerText:inv_prev_btn,
     PlayerText:inv_prev_btn_bg,
     PlayerText:inv_next_btn,
     PlayerText:inv_next_btn_bg,
-    // Player preview va stats
     PlayerText:inv_player_preview,
     PlayerText:inv_stats_bg,
     PlayerText:inv_health_text,
@@ -94,8 +86,6 @@ enum E_DROPPED_ITEM {
     drop_time
 }
 
-// ===================== VARIABLES =====================
-// Items dua tren cau truc gamemode (24/7 store items)
 new ItemData[][E_ITEM_DATA] = {
     {ITEM_CELLPHONE, "Dien thoai", INV_ITEM_TYPE_OTHER, 330, 500, true, "Dien thoai di dong"},
     {ITEM_PHONEBOOK, "Danh ba", INV_ITEM_TYPE_OTHER, 2824, 50, true, "Cuon danh ba dien thoai"},
@@ -117,7 +107,6 @@ new ItemData[][E_ITEM_DATA] = {
 new PlayerInventory[MAX_PLAYERS][MAX_INVENTORY_SLOTS][E_PLAYER_INVENTORY];
 new PlayerInventoryTD[MAX_PLAYERS][E_INVENTORY_TEXTDRAWS];
 
-// Array rieng cho slots, slot backgrounds va quantity textdraws
 new PlayerText:PlayerInventorySlots[MAX_PLAYERS][SLOTS_PER_PAGE];
 new PlayerText:PlayerInventorySlotBG[MAX_PLAYERS][SLOTS_PER_PAGE];
 new PlayerText:PlayerInventorySlotQty[MAX_PLAYERS][SLOTS_PER_PAGE];
@@ -128,19 +117,12 @@ new CurrentPage[MAX_PLAYERS];
 new bool:DragMode[MAX_PLAYERS];
 new DragSourceSlot[MAX_PLAYERS] = {-1, ...};
 
-// Bien cho dialog giveitem
 new GiveItemTargetID[MAX_PLAYERS] = {-1, ...};
 new GiveItemID[MAX_PLAYERS] = {-1, ...};
 
-// Bien cho drop system
 new DroppedItems[MAX_DROPPED_ITEMS][E_DROPPED_ITEM];
 new DropSlot[MAX_PLAYERS] = {-1, ...};
 
-// Inventory system - no separate timer needed
-
-// ===================== FUNCTIONS =====================
-
-// Ham tim item theo ID
 stock GetItemDataByID(itemid) {
     for(new i = 0; i < sizeof(ItemData); i++) {
         if(ItemData[i][item_id] == itemid) {
@@ -150,9 +132,7 @@ stock GetItemDataByID(itemid) {
     return -1;
 }
 
-// Ham tim slot trong - Optimized
 stock GetEmptyInventorySlot(playerid) {
-    // Validation check
     if(!IsPlayerConnected(playerid)) return -1;
     
     for(new i = 0; i < MAX_INVENTORY_SLOTS; i++) {
@@ -163,9 +143,7 @@ stock GetEmptyInventorySlot(playerid) {
     return -1;
 }
 
-// Ham tim item trong inventory - Optimized
 stock FindItemInInventory(playerid, itemid) {
-    // Validation checks
     if(!IsPlayerConnected(playerid) || itemid < 0) return -1;
     
     for(new i = 0; i < MAX_INVENTORY_SLOTS; i++) {
@@ -176,16 +154,13 @@ stock FindItemInInventory(playerid, itemid) {
     return -1;
 }
 
-// Ham them item vao inventory - Optimized
 stock AddItemToInventory(playerid, itemid, quantity = 1) {
-    // Validation checks
     if(!IsPlayerConnected(playerid) || itemid < 0 || quantity <= 0) return 0;
     if(quantity > MAX_ITEM_STACK) quantity = MAX_ITEM_STACK;
     
     new slot = FindItemInInventory(playerid, itemid);
     
     if(slot != -1) {
-        // Item da ton tai, tang so luong
         new new_quantity = PlayerInventory[playerid][slot][inv_quantity] + quantity;
         if(new_quantity > MAX_ITEM_STACK) {
             PlayerInventory[playerid][slot][inv_quantity] = MAX_ITEM_STACK;
@@ -193,7 +168,6 @@ stock AddItemToInventory(playerid, itemid, quantity = 1) {
             PlayerInventory[playerid][slot][inv_quantity] = new_quantity;
         }
     } else {
-        // Tim slot trong de them item moi
         slot = GetEmptyInventorySlot(playerid);
         if(slot != -1) {
             PlayerInventory[playerid][slot][inv_item_id] = itemid;
@@ -205,70 +179,58 @@ stock AddItemToInventory(playerid, itemid, quantity = 1) {
         }
     }
     
-    // Chi update display neu inventory dang mo
     if(InventoryOpen[playerid]) {
         UpdateInventoryDisplay(playerid);
     }
     return 1;
 }
 
-// Ham xoa item khoi inventory - Optimized
 stock RemoveItemFromInventory(playerid, itemid, quantity = 1) {
-    // Validation checks
     if(!IsPlayerConnected(playerid) || itemid < 0 || quantity <= 0) return 0;
     
     new slot = FindItemInInventory(playerid, itemid);
     if(slot == -1 || slot >= MAX_INVENTORY_SLOTS) return 0;
     
-    // Kiem tra so luong hien tai
     if(PlayerInventory[playerid][slot][inv_quantity] < quantity) {
         quantity = PlayerInventory[playerid][slot][inv_quantity];
     }
     
     PlayerInventory[playerid][slot][inv_quantity] -= quantity;
     if(PlayerInventory[playerid][slot][inv_quantity] <= 0) {
-        // Reset slot ve trang thai trong
         PlayerInventory[playerid][slot][inv_item_id] = -1;
         PlayerInventory[playerid][slot][inv_quantity] = 0;
         PlayerInventory[playerid][slot][inv_slot] = 0;
         
-        // Reset selection neu slot nay dang duoc chon
         if(SelectedSlot[playerid] == slot) {
             SelectedSlot[playerid] = -1;
         }
     }
     
-    // Chi update display neu inventory dang mo
     if(InventoryOpen[playerid]) {
         UpdateInventoryDisplay(playerid);
     }
     return 1;
 }
 
-// Ham tao textdraw cho inventory - Su dung PlayerTextDraw nhu bank.pwn
 stock CreateInventoryTextdraws(playerid) {
-    // Background chinh - Outer border (den) - Tang them cho 4 hang
     PlayerInventoryTD[playerid][inv_bg] = CreatePlayerTextDraw(playerid, 100.0, 80.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_bg], 440.0, 450.0);
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_bg], 1);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_bg], 0x000000DD);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_bg], 4);
     
-    // Background border - Inner background (xam dam) - Tang them cho 4 hang
     PlayerInventoryTD[playerid][inv_bg_border] = CreatePlayerTextDraw(playerid, 105.0, 85.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_bg_border], 430.0, 440.0);
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_bg_border], 1);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_bg_border], 0x1A1A1AFF);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_bg_border], 4);
     
-    // Title background - Thanh tieu de mau xanh - Cap nhat vi tri
     PlayerInventoryTD[playerid][inv_title_bg] = CreatePlayerTextDraw(playerid, 105.0, 85.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_title_bg], 430.0, 25.0);
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_title_bg], 1);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_title_bg], 0x4CAF50FF);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_title_bg], 4);
     
-    // Tieu de - Cap nhat vi tri
     PlayerInventoryTD[playerid][inv_title] = CreatePlayerTextDraw(playerid, 320.0, 92.0, "~g~BAG ~w~INVENTORY SYSTEM");
     PlayerTextDrawLetterSize(playerid, PlayerInventoryTD[playerid][inv_title], 0.350, 1.600);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_title], -1);
@@ -277,14 +239,12 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_title], 2);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_title], 2);
     
-    // Nut dong - Background - Cap nhat vi tri
     PlayerInventoryTD[playerid][inv_close_btn_bg] = CreatePlayerTextDraw(playerid, 505.0, 88.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_close_btn_bg], 25.0, 20.0);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_close_btn_bg], 0xF44336DD);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_close_btn_bg], 4);
     PlayerTextDrawSetSelectable(playerid, PlayerInventoryTD[playerid][inv_close_btn_bg], true);
     
-    // Nut dong - Text - Cap nhat vi tri
     PlayerInventoryTD[playerid][inv_close_btn] = CreatePlayerTextDraw(playerid, 517.0, 90.0, "~w~X");
     PlayerTextDrawLetterSize(playerid, PlayerInventoryTD[playerid][inv_close_btn], 0.300, 1.200);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_close_btn], -1);
@@ -293,7 +253,6 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_close_btn], 2);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_close_btn], 2);
     
-    // Tao cac slot inventory - Chi tao slots hien thi (30 slots - 6 hang x 5 cot) - Cap nhat layout
     new Float:start_x = 115.0, Float:start_y = 125.0;
     new Float:slot_size = 38.0, Float:spacing = 1.5;
     
@@ -304,7 +263,6 @@ stock CreateInventoryTextdraws(playerid) {
         new Float:x = start_x + (col * (slot_size + spacing));
         new Float:y = start_y + (row * (slot_size + spacing));
         
-        // Background slot - Su dung LD_BUM:blkdot
         PlayerInventorySlotBG[playerid][i] = CreatePlayerTextDraw(playerid, x, y, "LD_BUM:blkdot");
         PlayerTextDrawTextSize(playerid, PlayerInventorySlotBG[playerid][i], slot_size, slot_size);
         PlayerTextDrawAlignment(playerid, PlayerInventorySlotBG[playerid][i], 1);
@@ -312,7 +270,6 @@ stock CreateInventoryTextdraws(playerid) {
         PlayerTextDrawFont(playerid, PlayerInventorySlotBG[playerid][i], 4);
         PlayerTextDrawSetSelectable(playerid, PlayerInventorySlotBG[playerid][i], true);
         
-        // Item slot - Icon 3D model thay vi text
         PlayerInventorySlots[playerid][i] = CreatePlayerTextDraw(playerid, x + 4.0, y + 4.0, "");
         PlayerTextDrawTextSize(playerid, PlayerInventorySlots[playerid][i], 30.0, 30.0);
         PlayerTextDrawAlignment(playerid, PlayerInventorySlots[playerid][i], 1);
@@ -320,7 +277,6 @@ stock CreateInventoryTextdraws(playerid) {
         PlayerTextDrawFont(playerid, PlayerInventorySlots[playerid][i], 5);
         PlayerTextDrawBackgroundColor(playerid, PlayerInventorySlots[playerid][i], 0x00000000);
         
-        // Quantity text - Goc duoi ben phai cua slot, mau vang de noi bat
         PlayerInventorySlotQty[playerid][i] = CreatePlayerTextDraw(playerid, x + slot_size - 4.0, y + slot_size - 8.0, "");
         PlayerTextDrawLetterSize(playerid, PlayerInventorySlotQty[playerid][i], 0.16, 0.8);
         PlayerTextDrawColor(playerid, PlayerInventorySlotQty[playerid][i], 0xFFFF00FF);
@@ -330,21 +286,18 @@ stock CreateInventoryTextdraws(playerid) {
         PlayerTextDrawFont(playerid, PlayerInventorySlotQty[playerid][i], 2);
     }
     
-    // Panel thong tin item - Background - Cap nhat vi tri va kich thuoc
     PlayerInventoryTD[playerid][inv_item_info_bg] = CreatePlayerTextDraw(playerid, 340.0, 125.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_item_info_bg], 155.0, 120.0);
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_item_info_bg], 1);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_item_info_bg], 0x2A2A2AFF);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_item_info_bg], 4);
     
-    // Panel thong tin item - Title bar - Cap nhat vi tri
     PlayerInventoryTD[playerid][inv_item_info] = CreatePlayerTextDraw(playerid, 340.0, 125.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_item_info], 155.0, 20.0);
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_item_info], 1);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_item_info], 0x4CAF50FF);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_item_info], 4);
     
-    // Ten item - Cap nhat vi tri
     PlayerInventoryTD[playerid][inv_item_name] = CreatePlayerTextDraw(playerid, 417.0, 130.0, "~g~ITEM INFO");
     PlayerTextDrawLetterSize(playerid, PlayerInventoryTD[playerid][inv_item_name], 0.220, 1.100);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_item_name], 0xFFFFFFFF);
@@ -353,7 +306,6 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_item_name], 2);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_item_name], 2);
     
-    // Mo ta item - Cap nhat vi tri
     PlayerInventoryTD[playerid][inv_item_desc] = CreatePlayerTextDraw(playerid, 350.0, 155.0, "Chon mot item~n~de xem thong tin");
     PlayerTextDrawLetterSize(playerid, PlayerInventoryTD[playerid][inv_item_desc], 0.180, 0.900);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_item_desc], 0xAAAAAAFF);
@@ -361,14 +313,13 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawSetOutline(playerid, PlayerInventoryTD[playerid][inv_item_desc], 1);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_item_desc], 1);
     
-    // Nut su dung - Background - Cap nhat vi tri
+   
     PlayerInventoryTD[playerid][inv_use_btn_bg] = CreatePlayerTextDraw(playerid, 350.0, 205.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_use_btn_bg], 65.0, 18.0);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_use_btn_bg], 0x4CAF50DD);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_use_btn_bg], 4);
     PlayerTextDrawSetSelectable(playerid, PlayerInventoryTD[playerid][inv_use_btn_bg], true);
     
-    // Nut su dung - Text - Cap nhat vi tri
     PlayerInventoryTD[playerid][inv_use_btn] = CreatePlayerTextDraw(playerid, 382.0, 206.0, "~w~USE");
     PlayerTextDrawLetterSize(playerid, PlayerInventoryTD[playerid][inv_use_btn], 0.220, 1.100);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_use_btn], -1);
@@ -377,14 +328,14 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_use_btn], 2);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_use_btn], 2);
     
-    // Nut vut bo - Background - Cap nhat vi tri
+    
     PlayerInventoryTD[playerid][inv_drop_btn_bg] = CreatePlayerTextDraw(playerid, 425.0, 205.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_drop_btn_bg], 65.0, 18.0);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_drop_btn_bg], 0xFF9800DD);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_drop_btn_bg], 4);
     PlayerTextDrawSetSelectable(playerid, PlayerInventoryTD[playerid][inv_drop_btn_bg], true);
     
-    // Nut vut bo - Text - Cap nhat vi tri
+    
     PlayerInventoryTD[playerid][inv_drop_btn] = CreatePlayerTextDraw(playerid, 457.0, 206.0, "~w~DROP");
     PlayerTextDrawLetterSize(playerid, PlayerInventoryTD[playerid][inv_drop_btn], 0.220, 1.100);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_drop_btn], -1);
@@ -393,14 +344,14 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_drop_btn], 2);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_drop_btn], 2);
     
-    // Phan trang - Background - Di chuyen xuong duoi hon (sau 6 hang slots)
+    
     PlayerInventoryTD[playerid][inv_page_bg] = CreatePlayerTextDraw(playerid, 115.0, 370.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_page_bg], 220.0, 25.0);
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_page_bg], 1);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_page_bg], 0x2A2A2AFF);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_page_bg], 4);
     
-    // Nut Previous - Background (enable neu co trang truoc) - Di chuyen xuong
+    
     PlayerInventoryTD[playerid][inv_prev_btn_bg] = CreatePlayerTextDraw(playerid, 125.0, 373.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_prev_btn_bg], 35.0, 18.0);
     if(CurrentPage[playerid] > 0) {
@@ -411,7 +362,7 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_prev_btn_bg], 4);
     PlayerTextDrawSetSelectable(playerid, PlayerInventoryTD[playerid][inv_prev_btn_bg], true);
     
-    // Nut Previous - Text - Di chuyen xuong
+    
     PlayerInventoryTD[playerid][inv_prev_btn] = CreatePlayerTextDraw(playerid, 142.0, 374.0, "~w~<<");
     PlayerTextDrawLetterSize(playerid, PlayerInventoryTD[playerid][inv_prev_btn], 0.220, 1.100);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_prev_btn], -1);
@@ -420,7 +371,7 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_prev_btn], 2);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_prev_btn], 2);
     
-    // Text phan trang - Di chuyen xuong
+    
     new page_str[32];
     format(page_str, sizeof(page_str), "~w~Trang ~y~%d~w~/~y~%d", CurrentPage[playerid] + 1, MAX_PAGES);
     PlayerInventoryTD[playerid][inv_page_text] = CreatePlayerTextDraw(playerid, 225.0, 376.0, page_str);
@@ -431,7 +382,7 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_page_text], 2);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_page_text], 1);
     
-    // Nut Next - Background (enable neu co trang sau) - Di chuyen xuong
+    
     PlayerInventoryTD[playerid][inv_next_btn_bg] = CreatePlayerTextDraw(playerid, 290.0, 373.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_next_btn_bg], 35.0, 18.0);
     if(CurrentPage[playerid] < MAX_PAGES - 1) {
@@ -442,7 +393,7 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_next_btn_bg], 4);
     PlayerTextDrawSetSelectable(playerid, PlayerInventoryTD[playerid][inv_next_btn_bg], true);
     
-    // Nut Next - Text - Di chuyen xuong
+    
     PlayerInventoryTD[playerid][inv_next_btn] = CreatePlayerTextDraw(playerid, 307.0, 374.0, "~w~>>");
     PlayerTextDrawLetterSize(playerid, PlayerInventoryTD[playerid][inv_next_btn], 0.220, 1.100);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_next_btn], -1);
@@ -451,7 +402,6 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_next_btn], 2);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_next_btn], 2);
     
-    // Player Preview Model (ben phai, duoi item info) - Cai thien vi tri
     PlayerInventoryTD[playerid][inv_player_preview] = CreatePlayerTextDraw(playerid, 370.0, 250.0, "");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_player_preview], 85.0, 95.0);
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_player_preview], 1);
@@ -461,14 +411,12 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawSetPreviewRot(playerid, PlayerInventoryTD[playerid][inv_player_preview], -10.0, 0.0, -20.0, 1.0);
     PlayerTextDrawBackgroundColor(playerid, PlayerInventoryTD[playerid][inv_player_preview], 0x1A1A1AFF);
     
-    // Stats Background - Ben phai, duoi player preview (gan hon va dep hon)
     PlayerInventoryTD[playerid][inv_stats_bg] = CreatePlayerTextDraw(playerid, 355.0, 350.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, PlayerInventoryTD[playerid][inv_stats_bg], 125.0, 70.0);
     PlayerTextDrawAlignment(playerid, PlayerInventoryTD[playerid][inv_stats_bg], 1);
     PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_stats_bg], 0x1A1A1ACC);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_stats_bg], 4);
     
-    // Health Text - Ben phai (gan hon va dep hon)
     new Float:health;
     GetPlayerHealth(playerid, health);
     new health_str[32];
@@ -480,7 +428,6 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawSetOutline(playerid, PlayerInventoryTD[playerid][inv_health_text], 1);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_health_text], 1);
     
-    // Armor Text - Ben phai (gan hon)
     new Float:armor;
     GetPlayerArmour(playerid, armor);
     new armor_str[32];
@@ -492,7 +439,6 @@ stock CreateInventoryTextdraws(playerid) {
     PlayerTextDrawSetOutline(playerid, PlayerInventoryTD[playerid][inv_armor_text], 1);
     PlayerTextDrawFont(playerid, PlayerInventoryTD[playerid][inv_armor_text], 1);
     
-    // Money Text - Ben phai (gan hon)
     new money_str[32];
     format(money_str, sizeof(money_str), "~g~Tien: ~y~$%s", FormatInventoryMoney(GetPlayerMoney(playerid)));
     PlayerInventoryTD[playerid][inv_money_text] = CreatePlayerTextDraw(playerid, 365.0, 392.0, money_str);
@@ -505,7 +451,6 @@ stock CreateInventoryTextdraws(playerid) {
     return 1;
 }
 
-// Ham huy textdraw - Su dung PlayerTextDrawDestroy
 stock DestroyInventoryTextdraws(playerid) {
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_bg]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_bg_border]);
@@ -521,14 +466,13 @@ stock DestroyInventoryTextdraws(playerid) {
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_use_btn_bg]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_drop_btn]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_drop_btn_bg]);
-    // Phan trang
+
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_page_bg]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_page_text]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_prev_btn]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_prev_btn_bg]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_next_btn]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_next_btn_bg]);
-    // Player preview va stats
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_player_preview]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_stats_bg]);
     PlayerTextDrawDestroy(playerid, PlayerInventoryTD[playerid][inv_health_text]);
@@ -543,30 +487,24 @@ stock DestroyInventoryTextdraws(playerid) {
     return 1;
 }
 
-// Ham cap nhat player preview model - Optimized
 stock UpdatePlayerPreview(playerid) {
-    // Validation checks
     if(!IsPlayerConnected(playerid) || !InventoryOpen[playerid]) return 0;
     
     PlayerTextDrawSetPreviewModel(playerid, PlayerInventoryTD[playerid][inv_player_preview], PlayerInfo[playerid][pModel]);
     return 1;
 }
 
-// Ham goi khi nguoi choi thay doi skin - Optimized
 stock OnPlayerSkinChanged(playerid) {
     if(!IsPlayerConnected(playerid)) return 0;
     UpdatePlayerPreview(playerid);
     return 1;
 }
 
-// Ham cap nhat hien thi inventory
 stock UpdateInventoryDisplay(playerid) {
-    // Cap nhat phan trang
     new page_str[32];
     format(page_str, sizeof(page_str), "~w~Trang ~y~%d~w~/~y~%d", CurrentPage[playerid] + 1, MAX_PAGES);
     PlayerTextDrawSetString(playerid, PlayerInventoryTD[playerid][inv_page_text], page_str);
     
-    // Cap nhat mau nut Previous
     if(CurrentPage[playerid] > 0) {
         PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_prev_btn_bg], 0x4CAF50DD);
     } else {
@@ -574,7 +512,6 @@ stock UpdateInventoryDisplay(playerid) {
     }
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_prev_btn_bg]);
     
-    // Cap nhat mau nut Next
     if(CurrentPage[playerid] < MAX_PAGES - 1) {
         PlayerTextDrawColor(playerid, PlayerInventoryTD[playerid][inv_next_btn_bg], 0x4CAF50DD);
     } else {
@@ -582,7 +519,6 @@ stock UpdateInventoryDisplay(playerid) {
     }
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_next_btn_bg]);
     
-    // Cap nhat stats
     new Float:health, Float:armor;
     GetPlayerHealth(playerid, health);
     GetPlayerArmour(playerid, armor);
@@ -596,19 +532,16 @@ stock UpdateInventoryDisplay(playerid) {
     PlayerTextDrawSetString(playerid, PlayerInventoryTD[playerid][inv_armor_text], armor_str);
     PlayerTextDrawSetString(playerid, PlayerInventoryTD[playerid][inv_money_text], money_str);
     
-    // Cap nhat cac slot - Chi hien thi slots cua trang hien tai
     new start_slot = CurrentPage[playerid] * SLOTS_PER_PAGE;
     new end_slot = start_slot + SLOTS_PER_PAGE;
     if(end_slot > MAX_INVENTORY_SLOTS) end_slot = MAX_INVENTORY_SLOTS;
     
-    // An tat ca slots hien thi truoc
     for(new i = 0; i < SLOTS_PER_PAGE; i++) {
         PlayerTextDrawHide(playerid, PlayerInventorySlots[playerid][i]);
         PlayerTextDrawHide(playerid, PlayerInventorySlotBG[playerid][i]);
         PlayerTextDrawHide(playerid, PlayerInventorySlotQty[playerid][i]);
     }
     
-    // Hien thi slots cua trang hien tai
     new display_index = 0;
     for(new i = start_slot; i < end_slot; i++) {
         if(display_index >= SLOTS_PER_PAGE) break;
@@ -616,12 +549,10 @@ stock UpdateInventoryDisplay(playerid) {
         if(PlayerInventory[playerid][i][inv_item_id] != -1) {
             new itemdata = GetItemDataByID(PlayerInventory[playerid][i][inv_item_id]);
             if(itemdata != -1) {
-                // Hien thi 3D model icon cua item
                 PlayerTextDrawSetPreviewModel(playerid, PlayerInventorySlots[playerid][display_index], ItemData[itemdata][item_model]);
                 PlayerTextDrawSetPreviewRot(playerid, PlayerInventorySlots[playerid][display_index], -10.0, 0.0, -20.0, 1.0);
                 PlayerTextDrawShow(playerid, PlayerInventorySlots[playerid][display_index]);
                 
-                // Hien thi quantity cho tat ca items
                 new quantity_str[8];
                 if(PlayerInventory[playerid][i][inv_quantity] > 1) {
                     format(quantity_str, sizeof(quantity_str), "x%d", PlayerInventory[playerid][i][inv_quantity]);
@@ -631,12 +562,10 @@ stock UpdateInventoryDisplay(playerid) {
                 PlayerTextDrawSetString(playerid, PlayerInventorySlotQty[playerid][display_index], quantity_str);
                 PlayerTextDrawShow(playerid, PlayerInventorySlotQty[playerid][display_index]);
                 
-                // Doi mau slot neu co item
                 PlayerTextDrawColor(playerid, PlayerInventorySlotBG[playerid][display_index], 0x555555BB);
                 PlayerTextDrawShow(playerid, PlayerInventorySlotBG[playerid][display_index]);
             }
         } else {
-            // Slot trong - Chi hien thi background, khong co icon va quantity
             PlayerTextDrawHide(playerid, PlayerInventorySlots[playerid][display_index]);
             PlayerTextDrawHide(playerid, PlayerInventorySlotQty[playerid][display_index]);
             PlayerTextDrawColor(playerid, PlayerInventorySlotBG[playerid][display_index], 0x333333BB);
@@ -645,7 +574,6 @@ stock UpdateInventoryDisplay(playerid) {
         display_index++;
     }
     
-    // Reset item info neu khong co item nao duoc chon
     if(SelectedSlot[playerid] == -1) {
         PlayerTextDrawSetString(playerid, PlayerInventoryTD[playerid][inv_item_name], "~g~ITEM INFO");
         PlayerTextDrawSetString(playerid, PlayerInventoryTD[playerid][inv_item_desc], "Chon mot item~n~de xem thong tin");
@@ -654,13 +582,11 @@ stock UpdateInventoryDisplay(playerid) {
     return 1;
 }
 
-// Ham mo inventory
 stock ShowPlayerInventory(playerid) {
     if(InventoryOpen[playerid]) return 0;
     
     CreateInventoryTextdraws(playerid);
     
-    // Hien thi tat ca PlayerTextDraw
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_bg]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_bg_border]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_title_bg]);
@@ -675,14 +601,12 @@ stock ShowPlayerInventory(playerid) {
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_use_btn_bg]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_drop_btn]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_drop_btn_bg]);
-    // Phan trang
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_page_bg]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_page_text]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_prev_btn]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_prev_btn_bg]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_next_btn]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_next_btn_bg]);
-    // Player preview va stats
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_player_preview]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_stats_bg]);
     PlayerTextDrawShow(playerid, PlayerInventoryTD[playerid][inv_health_text]);
@@ -694,7 +618,7 @@ stock ShowPlayerInventory(playerid) {
     }
     
     UpdateInventoryDisplay(playerid);
-    UpdatePlayerPreview(playerid); // Cap nhat preview model
+    UpdatePlayerPreview(playerid);
     
     InventoryOpen[playerid] = true;
     SelectedSlot[playerid] = -1;
@@ -703,11 +627,9 @@ stock ShowPlayerInventory(playerid) {
     return 1;
 }
 
-// Ham dong inventory  
 stock HideInventory(playerid) {
     if(!InventoryOpen[playerid]) return 0;
     
-    // An tat ca PlayerTextDraw
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_bg]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_bg_border]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_title_bg]);
@@ -722,14 +644,12 @@ stock HideInventory(playerid) {
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_use_btn_bg]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_drop_btn]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_drop_btn_bg]);
-    // Phan trang
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_page_bg]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_page_text]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_prev_btn]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_prev_btn_bg]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_next_btn]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_next_btn_bg]);
-    // Player preview va stats
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_player_preview]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_stats_bg]);
     PlayerTextDrawHide(playerid, PlayerInventoryTD[playerid][inv_health_text]);
@@ -1063,8 +983,8 @@ stock ShowGiveItemPlayerDialog(playerid, itemid) {
     format(dialog, sizeof(dialog), "{FFFF00}=== GIVE ITEM: %s ===\n", ItemData[itemdata][item_name]);
     strcat(dialog, "{FFFFFF}Chon nguoi choi de give item:\n\n");
     
-    // Danh sach players online - su dung for loop de dam bao thu tu
-    for(new i = 0; i < MAX_PLAYERS; i++) {
+    // Danh sach players online - su dung foreach de toi uu hieu suat
+    foreach(new i: Player) {
         if(IsPlayerConnected(i)) {
             new line[64];
             format(line, sizeof(line), "{00FF00}%s {FFFFFF}(ID: %d)\n", GetPlayerNameEx(i), i);
@@ -1429,10 +1349,10 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[]) {
                 return 1;
             }
             
-            // Tim player theo listitem - khop voi for loop trong ShowGiveItemPlayerDialog
+            // Tim player theo listitem - khop voi foreach trong ShowGiveItemPlayerDialog
             new count = 0;
             new targetid = -1;
-            for(new i = 0; i < MAX_PLAYERS; i++) {
+            foreach(new i: Player) {
                 if(IsPlayerConnected(i)) {
                     if(count == listitem) {
                         targetid = i;
@@ -1553,9 +1473,7 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[]) {
 // ===================== YSI HOOKS =====================
 
 hook OnGameModeInit() {
-    // Defer drop system initialization to prevent blocking
     SetTimer("DeferredBaloInit", 300, false);
-    printf("[BALO] Inventory system initialization deferred");
     return 1;
 }
 

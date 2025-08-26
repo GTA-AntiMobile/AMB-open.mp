@@ -19007,25 +19007,30 @@ CMD:siren(playerid, params[])
 				{
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 2, 18646, 10, -0.20, 0.30, 0.3, -90, -30, 0);
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 1, 18646, 10, -0.20, 0.30, 0.3, -90, -30, 0);
+					PlayerPlaySound(playerid, 3038, -0.20, 0.30, 0.3);
 				}
 				case 402:
 				{
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 2, 18646, 10, -0.20, 0.5, 0.4, -90, -50, 0);
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 1, 18646, 10, -0.20, 0.5, 0.4, -90, -50, 0);
+					PlayerPlaySound(playerid, 3038, -0.20, 0.30, 0.3);
 				}
 				case 541, 411:
 				{
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 2, 18646, 10, 0.0, 0.2, 0.4, -90, -30, 0);
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 1, 18646, 10, 0.0, 0.2, 0.4, -90, -30, 0);
+					PlayerPlaySound(playerid, 3038, -0.20, 0.30, 0.3);
 				}
 				case 451: {
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 2, 18646, 10, -0.30, 0.4, 0.6, -90, -50, 0);
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 1, 18646, 10, -0.30, 0.4, 0.6, -90, -50, 0);
+					PlayerPlaySound(playerid, 3038, -0.20, 0.30, 0.3);
 				}
 				default:
 				{
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 2, 18646, 10, -0.30, 0.4, 0.4, -90, -50, 0);
 					SetPlayerAttachedObject(playerid, MAX_PLAYER_ATTACHED_OBJECTS - 1, 18646, 10, -0.30, 0.4, 0.4, -90, -50, 0);
+					PlayerPlaySound(playerid, 3038, -0.20, 0.30, 0.3);
 				}
 			}
 			SetPVarInt(playerid, "Siren", 1);
@@ -19772,36 +19777,36 @@ CMD:dvstorage(playerid, params[])
 	return 1;
 }
 
-CMD:chinhxe(playerid, params[]) {
-	return cmd_vstorage(playerid, params);
-}
-CMD:vstorage(playerid, params[])
-{
-	if(PlayerTied[playerid] != 0 || PlayerCuffed[playerid] != 0 || PlayerInfo[playerid][pJailTime] > 0 || GetPVarInt(playerid, "Injured")) return SendClientMessageEx(playerid, COLOR_GRAD2, "Ban khong the lam dieu nay vao luc nay.");
-	if(PlayerInfo[playerid][pFreezeCar] == 0 || PlayerInfo[playerid][pAdmin] >= 2)
-	{
-		new vstring[4096], icount = GetPlayerVehicleSlots(playerid);
-		for(new i, iModelID; i < icount; i++) {
-			if((iModelID = PlayerVehicleInfo[playerid][i][pvModelId] - 400) >= 0) {
-				if(PlayerVehicleInfo[playerid][i][pvImpounded]) {
-					format(vstring, sizeof(vstring), "%s\n%s (Tich thu)", vstring, VehicleName[iModelID]);
-				}
-				else if(PlayerVehicleInfo[playerid][i][pvDisabled]) {
-					format(vstring, sizeof(vstring), "%s\n%s (Khong dung duoc)", vstring, VehicleName[iModelID]);
-				}
-				else if(!PlayerVehicleInfo[playerid][i][pvSpawned]) {
-					format(vstring, sizeof(vstring), "%s\n%s (Trong kho)", vstring, VehicleName[iModelID]);
-				}
-				else format(vstring, sizeof(vstring), "%s\n%s (Dang dung)", vstring, VehicleName[iModelID]);
-			}
-			else strcat(vstring, "\nTrong");
-		}
-		// format(vstring, sizeof(vstring), "%s\n{40FFFF}Them slot xe {FFD700}(Credits: %s){A9C4E4}", vstring, number_format(ShopItems[23][sItemPrice]));
-		ShowPlayerDialog(playerid, VEHICLESTORAGE, DIALOG_STYLE_LIST, "Xe cua toi", vstring, "Chinh xe", "Huy bo");
-	}
-	else { return SendClientMessageEx(playerid, COLOR_GRAD2, "Chiec xe nay da bi thu boi so canh sat, vui long toi DMV de lam thu tuc lay xe ra."); }
-	return 1;
-}
+// CMD:chinhxe(playerid, params[]) {
+// 	return cmd_vstorage(playerid, params);
+// }
+// CMD:vstorage(playerid, params[])
+// {
+// 	if(PlayerTied[playerid] != 0 || PlayerCuffed[playerid] != 0 || PlayerInfo[playerid][pJailTime] > 0 || GetPVarInt(playerid, "Injured")) return SendClientMessageEx(playerid, COLOR_GRAD2, "Ban khong the lam dieu nay vao luc nay.");
+// 	if(PlayerInfo[playerid][pFreezeCar] == 0 || PlayerInfo[playerid][pAdmin] >= 2)
+// 	{
+// 		new vstring[4096], icount = GetPlayerVehicleSlots(playerid);
+// 		for(new i, iModelID; i < icount; i++) {
+// 			if((iModelID = PlayerVehicleInfo[playerid][i][pvModelId] - 400) >= 0) {
+// 				if(PlayerVehicleInfo[playerid][i][pvImpounded]) {
+// 					format(vstring, sizeof(vstring), "%s\n%s (Tich thu)", vstring, VehicleName[iModelID]);
+// 				}
+// 				else if(PlayerVehicleInfo[playerid][i][pvDisabled]) {
+// 					format(vstring, sizeof(vstring), "%s\n%s (Khong dung duoc)", vstring, VehicleName[iModelID]);
+// 				}
+// 				else if(!PlayerVehicleInfo[playerid][i][pvSpawned]) {
+// 					format(vstring, sizeof(vstring), "%s\n%s (Trong kho)", vstring, VehicleName[iModelID]);
+// 				}
+// 				else format(vstring, sizeof(vstring), "%s\n%s (Dang dung)", vstring, VehicleName[iModelID]);
+// 			}
+// 			else strcat(vstring, "\nTrong");
+// 		}
+// 		// format(vstring, sizeof(vstring), "%s\n{40FFFF}Them slot xe {FFD700}(Credits: %s){A9C4E4}", vstring, number_format(ShopItems[23][sItemPrice]));
+// 		ShowPlayerDialog(playerid, VEHICLESTORAGE, DIALOG_STYLE_LIST, "Xe cua toi", vstring, "Chinh xe", "Huy bo");
+// 	}
+// 	else { return SendClientMessageEx(playerid, COLOR_GRAD2, "Chiec xe nay da bi thu boi so canh sat, vui long toi DMV de lam thu tuc lay xe ra."); }
+// 	return 1;
+// }
 
 CMD:removepvehicle(playerid, params[])
 {
@@ -19981,8 +19986,6 @@ CMD:deletecar(playerid, params[])
 		if((iModelID = PlayerVehicleInfo[playerid][i][pvModelId] - 400) >= 0)
 		{
 			if(PlayerVehicleInfo[playerid][i][pvImpounded]) format(vstring, sizeof(vstring), "%s\n%s (impounded)", vstring, VehicleName[iModelID]);
-			// Loại bỏ hiển thị xe disabled  
-			// else if(PlayerVehicleInfo[playerid][i][pvDisabled]) format(vstring, sizeof(vstring), "%s\n%s (disabled)", vstring, VehicleName[iModelID]);
 			else if(!PlayerVehicleInfo[playerid][i][pvSpawned]) format(vstring, sizeof(vstring), "%s\n%s (stored)", vstring, VehicleName[iModelID]);
 			else format(vstring, sizeof(vstring), "%s\n%s", vstring, VehicleName[iModelID]);
 		}
@@ -20011,139 +20014,141 @@ CMD:parktrailer(playerid, params[]) {
 	return 1;
 }
 
-CMD:dauxe(playerid, params[]) {
-	return cmd_park(playerid, params);
-}
+// CMD:dauxe(playerid, params[]) {
+// 	return cmd_park(playerid, params);
+// }
 
-CMD:park(playerid, params[])
-{
-	new
-		iVehicle = GetPlayerVehicleID(playerid),
-		iBusiness = GetCarBusiness(iVehicle),
-		Float: XYZ[4];
+// CMD:park(playerid, params[])
+// {
+// 	new
+// 		iVehicle = GetPlayerVehicleID(playerid),
+// 		iBusiness = GetCarBusiness(iVehicle),
+// 		Float: XYZ[4];
 
-	if(iVehicle == GetPVarInt(playerid, "RentedVehicle"))
-	{
-		new Float:x, Float:y, Float:z, Float:health;
-		GetVehicleHealth(iVehicle, health);
-		if(GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi tren chiec xe cua minh.");
-		if(health < 800) return SendClientMessageEx(playerid, COLOR_GREY, " Chiec xe cua ban bi hu hong qua nang, vui long sua xe de tiep tuc.");
-		if(PlayerInfo[playerid][pLockCar] == GetPlayerVehicleID(playerid)) PlayerInfo[playerid][pLockCar] = INVALID_VEHICLE_ID;
-		GetPlayerPos(playerid, x, y, z);
+// 	if(iVehicle == GetPVarInt(playerid, "RentedVehicle"))
+// 	{
+// 		new Float:x, Float:y, Float:z, Float:health;
+// 		GetVehicleHealth(iVehicle, health);
+// 		if(GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi tren chiec xe cua minh.");
+// 		if(health < 800) return SendClientMessageEx(playerid, COLOR_GREY, " Chiec xe cua ban bi hu hong qua nang, vui long sua xe de tiep tuc.");
+// 		if(PlayerInfo[playerid][pLockCar] == GetPlayerVehicleID(playerid)) PlayerInfo[playerid][pLockCar] = INVALID_VEHICLE_ID;
+// 		GetPlayerPos(playerid, x, y, z);
 
-		SetTimerEx("ParkRentedVehicle", 1000, false, "iiifff", playerid, iVehicle, GetVehicleModel(iVehicle), x, y, z);
-		SendClientMessageEx (playerid, COLOR_YELLOW, "Vui long khong di chuyen chiec xe...!");
-		return 1;
-	}
-	if (iVehicle != 0 && iBusiness != INVALID_BUSINESS_ID)
-	{
-		if (iBusiness != PlayerInfo[playerid][pBusiness]) return SendClientMessageEx(playerid, COLOR_WHITE, "Ban khong duoc phep dau chiec xe nay.");
-		new
-			iSlot = GetBusinessCarSlot(iVehicle);
+// 		SetTimerEx("ParkRentedVehicle", 1000, false, "iiifff", playerid, iVehicle, GetVehicleModel(iVehicle), x, y, z);
+// 		SendClientMessageEx (playerid, COLOR_YELLOW, "Vui long khong di chuyen chiec xe...!");
+// 		return 1;
+// 	}
+// 	if (iVehicle != 0 && iBusiness != INVALID_BUSINESS_ID)
+// 	{
+// 		if (iBusiness != PlayerInfo[playerid][pBusiness]) return SendClientMessageEx(playerid, COLOR_WHITE, "Ban khong duoc phep dau chiec xe nay.");
+// 		new
+// 			iSlot = GetBusinessCarSlot(iVehicle);
 
-		GetVehiclePos(iVehicle, XYZ[0], XYZ[1], XYZ[2]);
-		GetVehicleZAngle(iVehicle, XYZ[3]);
+// 		GetVehiclePos(iVehicle, XYZ[0], XYZ[1], XYZ[2]);
+// 		GetVehicleZAngle(iVehicle, XYZ[3]);
 
-		Businesses[iBusiness][bParkPosX][iSlot] = XYZ[0];
-		Businesses[iBusiness][bParkPosY][iSlot] = XYZ[1];
-		Businesses[iBusiness][bParkPosZ][iSlot] = XYZ[2];
-		Businesses[iBusiness][bParkAngle][iSlot] = XYZ[3];
+// 		Businesses[iBusiness][bParkPosX][iSlot] = XYZ[0];
+// 		Businesses[iBusiness][bParkPosY][iSlot] = XYZ[1];
+// 		Businesses[iBusiness][bParkPosZ][iSlot] = XYZ[2];
+// 		Businesses[iBusiness][bParkAngle][iSlot] = XYZ[3];
 
-		DestroyVehicle(Businesses[iBusiness][bVehID][iSlot]);
-		Businesses[iBusiness][bVehID][iSlot] = CreateVehicle(Businesses[iBusiness][bModel][iSlot], Businesses[iBusiness][bParkPosX][iSlot], Businesses[iBusiness][bParkPosY][iSlot], Businesses[iBusiness][bParkPosZ][iSlot],
-		Businesses[iBusiness][bParkAngle][iSlot], 0, 0, -1);
+// 		DestroyVehicle(Businesses[iBusiness][bVehID][iSlot]);
+// 		Businesses[iBusiness][bVehID][iSlot] = CreateVehicle(Businesses[iBusiness][bModel][iSlot], Businesses[iBusiness][bParkPosX][iSlot], Businesses[iBusiness][bParkPosY][iSlot], Businesses[iBusiness][bParkPosZ][iSlot],
+// 		Businesses[iBusiness][bParkAngle][iSlot], 0, 0, -1);
 
-		SaveDealershipVehicle(iBusiness, iSlot);
-		SendClientMessageEx(playerid, COLOR_WHITE, "Ban da dau chiec xe nay.");
-		return 1;
-	}
+// 		SaveDealershipVehicle(iBusiness, iSlot);
+// 		SendClientMessageEx(playerid, COLOR_WHITE, "Ban da dau chiec xe nay.");
+// 		return 1;
+// 	}
 
-	if(PlayerInfo[playerid][pVehicleKeysFrom] != INVALID_PLAYER_ID)
-	{
-		new ownerid = PlayerInfo[playerid][pVehicleKeysFrom];
-		if(IsPlayerConnected(ownerid))
-		{
-			new d = PlayerInfo[playerid][pVehicleKeys];
-			if(IsPlayerInVehicle(playerid, PlayerVehicleInfo[ownerid][d][pvId]))
-			{
-				if(GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi tren chiec xe cua minh.");
-				new Float:x, Float:y, Float:z, Float:health;
-				GetVehicleHealth(PlayerVehicleInfo[ownerid][d][pvId], health);
-				if(health < 800) return SendClientMessageEx(playerid, COLOR_GREY, " Chiec xe cua ban bi hu hong qua nang, vui long sua xe de tiep tuc.");
-				if(PlayerInfo[playerid][pLockCar] == GetPlayerVehicleID(playerid)) PlayerInfo[playerid][pLockCar] = INVALID_VEHICLE_ID;
+// 	if(PlayerInfo[playerid][pVehicleKeysFrom] != INVALID_PLAYER_ID)
+// 	{
+// 		new ownerid = PlayerInfo[playerid][pVehicleKeysFrom];
+// 		if(IsPlayerConnected(ownerid))
+// 		{
+// 			new d = PlayerInfo[playerid][pVehicleKeys];
+// 			if(IsPlayerInVehicle(playerid, PlayerVehicleInfo[ownerid][d][pvId]))
+// 			{
+// 				if(GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi tren chiec xe cua minh.");
+// 				new Float:x, Float:y, Float:z, Float:health;
+// 				GetVehicleHealth(PlayerVehicleInfo[ownerid][d][pvId], health);
+// 				if(health < 800) return SendClientMessageEx(playerid, COLOR_GREY, " Chiec xe cua ban bi hu hong qua nang, vui long sua xe de tiep tuc.");
+// 				if(PlayerInfo[playerid][pLockCar] == GetPlayerVehicleID(playerid)) PlayerInfo[playerid][pLockCar] = INVALID_VEHICLE_ID;
 
-				GetPlayerPos(playerid, x, y, z);
-				SetTimerEx("ParkVehicle", 1000, false, "iiiifff", playerid, ownerid, PlayerVehicleInfo[ownerid][d][pvId], d, x, y, z);
-				SendClientMessageEx (playerid, COLOR_YELLOW, "Vui long khong di chuyen chiec xe...!");
-				return 1;
-			}
-		}
-	}
-	for(new d = 0 ; d < MAX_PLAYERVEHICLES; d++)
-	{
-		if(IsPlayerInVehicle(playerid, PlayerVehicleInfo[playerid][d][pvId]))
-		{
-			new Float:x, Float:y, Float:z, Float:health;
-			GetVehicleHealth(PlayerVehicleInfo[playerid][d][pvId], health);
-			if(GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi tren chiec xe cua minh.");
-			if(health < 800) return SendClientMessageEx(playerid, COLOR_GREY, " Chiec xe cua ban bi hu hong qua nang, vui long sua xe de tiep tuc.");
-			if(PlayerInfo[playerid][pLockCar] == GetPlayerVehicleID(playerid)) PlayerInfo[playerid][pLockCar] = INVALID_VEHICLE_ID;
-			GetPlayerPos(playerid, x, y, z);
+// 				GetPlayerPos(playerid, x, y, z);
+// 				SetTimerEx("ParkVehicle", 1000, false, "iiiifff", playerid, ownerid, PlayerVehicleInfo[ownerid][d][pvId], d, x, y, z);
+// 				SendClientMessageEx (playerid, COLOR_YELLOW, "Vui long khong di chuyen chiec xe...!");
+// 				return 1;
+// 			}
+// 		}
+// 	}
+// 	for(new d = 0 ; d < MAX_PLAYERVEHICLES; d++)
+// 	{
+// 		if(IsPlayerInVehicle(playerid, PlayerVehicleInfo[playerid][d][pvId]))
+// 		{
+// 			new Float:x, Float:y, Float:z, Float:health;
+// 			GetVehicleHealth(PlayerVehicleInfo[playerid][d][pvId], health);
+// 			if(GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi tren chiec xe cua minh.");
+// 			if(health < 800) return SendClientMessageEx(playerid, COLOR_GREY, " Chiec xe cua ban bi hu hong qua nang, vui long sua xe de tiep tuc.");
+// 			if(PlayerInfo[playerid][pLockCar] == GetPlayerVehicleID(playerid)) PlayerInfo[playerid][pLockCar] = INVALID_VEHICLE_ID;
+// 			GetPlayerPos(playerid, x, y, z);
 
-			SetTimerEx("ParkVehicle", 1000, false, "iiiifff", playerid, INVALID_PLAYER_ID, PlayerVehicleInfo[playerid][d][pvId], d, x, y, z);
-			SendClientMessageEx (playerid, COLOR_YELLOW, "Vui long khong di chuyen chiec xe...!");
-			return 1;
-		}
-	}
-	SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi ben trong chiec xe cua ban.");
-	return 1;
-}
+// 			SetTimerEx("ParkVehicle", 1000, false, "iiiifff", playerid, INVALID_PLAYER_ID, PlayerVehicleInfo[playerid][d][pvId], d, x, y, z);
+// 			SendClientMessageEx (playerid, COLOR_YELLOW, "Vui long khong di chuyen chiec xe...!");
+// 			return 1;
+// 		}
+// 	}
+// 	SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi ben trong chiec xe cua ban.");
+// 	return 1;
+// }
 
-CMD:apark(playerid, params[]) {
-	if (PlayerInfo[playerid][pAdmin] >= 3)
-	{
-		foreach(new ownerid: Player)
-		{
-			for(new d = 0 ; d < MAX_PLAYERVEHICLES; d++)
-			{
-				if(IsPlayerInVehicle(playerid, PlayerVehicleInfo[ownerid][d][pvId]))
-				{
-					if(GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi tren chiec xe cua minh.");
-					new Float:x, Float:y, Float:z, Float:angle, Float:health;
-					if(PlayerInfo[playerid][pLockCar] == GetPlayerVehicleID(playerid)) PlayerInfo[playerid][pLockCar] = INVALID_VEHICLE_ID;
-					if(IsARC(GetPlayerVehicleID(playerid))) // RC Vehicles
-					{
-						new Float:vehPos[3];
-						GetVehiclePos(GetPlayerVehicleID(playerid),vehPos[0], vehPos[1], vehPos[2]);
-						SetPlayerPos(playerid,vehPos[0], vehPos[1]+0.5, vehPos[2]+0.5);
-					}
-					GetVehicleHealth(PlayerVehicleInfo[ownerid][d][pvId], health);
-					GetVehiclePos(PlayerVehicleInfo[ownerid][d][pvId], x, y, z);
-					GetVehicleZAngle(PlayerVehicleInfo[ownerid][d][pvId], angle);
-					SurfingCheck(GetPlayerVehicleID(playerid));
-					UpdatePlayerVehicleParkPosition(ownerid, d, x, y, z, angle, health, GetPlayerVirtualWorld(ownerid), GetPlayerInterior(ownerid));
-					IsPlayerEntering{playerid} = true;
-					PutPlayerInVehicle(playerid, GetPlayerVehicleID(playerid), 0);
-					SetPlayerArmedWeapon(playerid, 0);
+// CMD:apark(playerid, params[]) {
+// 	if (PlayerInfo[playerid][pAdmin] >= 3)
+// 	{
+// 		foreach(new ownerid: Player)
+// 		{
+// 			for(new d = 0 ; d < MAX_PLAYERVEHICLES; d++)
+// 			{
+// 				if(IsPlayerInVehicle(playerid, PlayerVehicleInfo[ownerid][d][pvId]))
+// 				{
+// 					if(GetPlayerState(playerid) != PLAYER_STATE_DRIVER) return SendClientMessageEx(playerid, COLOR_GREY, "Ban phai ngoi tren chiec xe cua minh.");
+// 					new Float:x, Float:y, Float:z, Float:angle, Float:health;
+// 					if(PlayerInfo[playerid][pLockCar] == GetPlayerVehicleID(playerid)) PlayerInfo[playerid][pLockCar] = INVALID_VEHICLE_ID;
+// 					if(IsARC(GetPlayerVehicleID(playerid))) // RC Vehicles
+// 					{
+// 						new Float:vehPos[3];
+// 						GetVehiclePos(GetPlayerVehicleID(playerid),vehPos[0], vehPos[1], vehPos[2]);
+// 						SetPlayerPos(playerid,vehPos[0], vehPos[1]+0.5, vehPos[2]+0.5);
+// 					}
+// 					GetVehicleHealth(PlayerVehicleInfo[ownerid][d][pvId], health);
+// 					GetVehiclePos(PlayerVehicleInfo[ownerid][d][pvId], x, y, z);
+// 					GetVehicleZAngle(PlayerVehicleInfo[ownerid][d][pvId], angle);
+// 					SurfingCheck(GetPlayerVehicleID(playerid));
+// 					UpdatePlayerVehicleParkPosition(ownerid, d, x, y, z, angle, health, GetPlayerVirtualWorld(ownerid), GetPlayerInterior(ownerid));
+// 					IsPlayerEntering{playerid} = true;
+// 					PutPlayerInVehicle(playerid, GetPlayerVehicleID(playerid), 0);
+// 					SetPlayerArmedWeapon(playerid, 0);
 
-					new szMessage[128];
+// 					new szMessage[128];
 
-					format(szMessage, sizeof(szMessage),"* Ban da dau %s's %s.",GetPlayerNameEx(ownerid), VehicleName[PlayerVehicleInfo[ownerid][d][pvModelId] - 400]);
-					SendClientMessageEx(playerid, COLOR_LIGHTBLUE, szMessage);
+// 					format(szMessage, sizeof(szMessage),"* Ban da dau %s's %s.",GetPlayerNameEx(ownerid), VehicleName[PlayerVehicleInfo[ownerid][d][pvModelId] - 400]);
+// 					SendClientMessageEx(playerid, COLOR_LIGHTBLUE, szMessage);
 
-					format(szMessage, sizeof(szMessage), "Xe cua ban %s da duoc di chuyen toi mot cho khoac. Su dung /timxe de tim chiec xe cua minh.", VehicleName[PlayerVehicleInfo[ownerid][d][pvModelId] - 400]);
-					SendClientMessageEx(ownerid, COLOR_LIGHTBLUE, szMessage);
-					return 1;
-				}
-			}
-		}
-	}
-	else
-	{
-		SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong duoc phep su dung lenh nay.");
-	}
-	return 1;
-}
+// 					format(szMessage, sizeof(szMessage), "Xe cua ban %s da duoc di chuyen toi mot cho khoac. Su dung /timxe de tim chiec xe cua minh.", VehicleName[PlayerVehicleInfo[ownerid][d][pvModelId] - 400]);
+// 					SendClientMessageEx(ownerid, COLOR_LIGHTBLUE, szMessage);
+// 					return 1;
+// 				}
+// 			}
+// 		}
+// 	}
+// 	else
+// 	{
+// 		SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong duoc phep su dung lenh nay.");
+// 	}
+// 	return 1;
+// }
+
+
 
 CMD:a(playerid, params[]) {
 	return cmd_admin(playerid, params);
@@ -22203,7 +22208,7 @@ CMD:reloadpvehicles(playerid, params[])
 	new string[128], giveplayerid;
 	if(sscanf(params, "u", giveplayerid)) return SendClientMessageEx(playerid, COLOR_GREY, "SU DUNG: /reloadpvehicles [player]");
 
-	UnloadPlayerVehicles(giveplayerid);
+			// DISABLED: UnloadPlayerVehicles(giveplayerid); // Now handled by new garage system
 	LoadPlayerVehicles(giveplayerid);
 
 	format(string, sizeof(string), " You have successfully reloaded %s's Vehicles.", GetPlayerNameEx(giveplayerid));
@@ -22221,7 +22226,7 @@ CMD:unloadpvehicles(playerid, params[])
 {
 	if(PlayerInfo[playerid][pAdmin] < 1337) return SendClientMessageEx(playerid, COLOR_GREY, "Ban khong the su dung lenh nay!");
 
-	foreach(new p: Player) { UnloadPlayerVehicles(p); }
+			// DISABLED: foreach(new p: Player) { UnloadPlayerVehicles(p); } // Now handled by new garage system
 	SendClientMessageEx(playerid, COLOR_GREY, "You have successfully unloaded all vehicles.");
 	return 1;
 }
@@ -23151,6 +23156,10 @@ CMD:hospital(playerid, params[])
 	return 1;
 }
 
+CMD:hoisinh(playerid, params[]) {
+	return cmd_revive(playerid, params);
+}
+
 CMD:revive(playerid, params[])
 {
 	if(PlayerInfo[playerid][pAdmin] >= 2)
@@ -23162,11 +23171,12 @@ CMD:revive(playerid, params[])
 		{
 			if(GetPVarInt(giveplayerid, "Injured") == 1)
 			{
-				format(string, sizeof(string), " You have revived %s.", GetPlayerNameEx(giveplayerid));
+				format(string, sizeof(string), " Ban da hoi sinh %s.", GetPlayerNameEx(giveplayerid));
 				SendClientMessageEx(playerid, COLOR_WHITE, string);
-				SendClientMessageEx(giveplayerid, COLOR_WHITE, "You have been revived by an Admin.");
-				format(string, sizeof(string), "AdmCmd: %s has been revived by %s", GetPlayerNameEx(giveplayerid), GetPlayerNameEx(playerid));
+				SendClientMessageEx(giveplayerid, COLOR_WHITE, "Ban da duoc hoi sinh boi Admin.");
+				format(string, sizeof(string), "[ADMIN:CMD] %s duoc hoi sinh boi %s", GetPlayerNameEx(giveplayerid), GetPlayerNameEx(playerid));
 				Log("logs/admin.log", string);
+				ABroadCast(COLOR_LIGHTRED,string,2);
 
 				KillEMSQueue(giveplayerid);
 				ClearAnimations(giveplayerid);
@@ -34965,7 +34975,6 @@ CMD:gotoid(playerid, params[])
 				SendClientMessageEx(playerid, COLOR_GRAD2, "Ban khong the lam dieu nay khi dang theo doi.");
 				return 1;
 			}
-			if(PlayerInfo[giveplayerid][pAdmin] == 99999 && !GetPVarType(giveplayerid, "EATeleportable")) return SendClientMessageEx(playerid, COLOR_WHITE, "Ban khong the dich chuyen den ho.");
 			GetPlayerPos(giveplayerid, plocx, plocy, plocz);
 			SetPlayerVirtualWorld(playerid, PlayerInfo[giveplayerid][pVW]);
 			Streamer_UpdateEx(playerid, plocx, plocy, plocz);
@@ -35019,10 +35028,6 @@ CMD:sendtoid(playerid, params[])
 			{
 				return SendClientMessageEx(playerid, COLOR_GRAD2, "Use /gethere to teleport instead!");
 			}
-			if(PlayerInfo[targetplayerid][pAdmin] >= PlayerInfo[playerid][pAdmin])
-			{
-				return SendClientMessageEx(playerid, COLOR_GRAD2, "You cannot use this command on a Admin with the same/greater Administrative Level than you.");
-			}
 			if(GetPVarInt(giveplayerid, "IsInArena") >= 0)
 			{
 				SetPVarInt(playerid, "tempPBP", giveplayerid);
@@ -35071,11 +35076,6 @@ CMD:gethere(playerid, params[])
 	new Float:plocx,Float:plocy,Float:plocz;
 	if (IsPlayerConnected(giveplayerid))
 	{
-		if(PlayerInfo[giveplayerid][pAdmin] >= PlayerInfo[playerid][pAdmin])
-		{
-			SendClientMessageEx(playerid, COLOR_WHITE, "You can't perform this action on an equal or higher level administrator.");
-			return 1;
-		}
 		if (PlayerInfo[playerid][pAdmin] >= 2)
 		{
 			if(GetPlayerState(giveplayerid) == PLAYER_STATE_SPECTATING)
@@ -35262,12 +35262,12 @@ CMD:setweather(playerid, params[])
 		return 1;
 	}
 
-	new weather;
-	if(sscanf(params, "d", weather)) return SendClientMessageEx(playerid, COLOR_GREY, "SU DUNG: /setweather [weatherid]");
+	new weathers;
+	if(sscanf(params, "d", weathers)) return SendClientMessageEx(playerid, COLOR_GREY, "SU DUNG: /setweather [weatherid]");
 
-	if(weather < 0||weather > 45) { SendClientMessageEx(playerid, COLOR_GREY, "   ID thoi thiet phai lon hon 1 va nho hon 45!"); return 1; }
-	SetWeather(weather);
-	gWeather = weather;
+	if(weathers < 0||weathers > 45) { SendClientMessageEx(playerid, COLOR_GREY, "   ID thoi thiet phai lon hon 1 va nho hon 45!"); return 1; }
+	SetWeather(weathers);
+	gWeather = weathers;
 	SendClientMessageEx(playerid, COLOR_GREY, "Thoi tiet da duoc thiet lap cho tat ca moi nguoi!");
 	return 1;
 }
@@ -51712,67 +51712,67 @@ CMD:famedlocker(playerid, params[]) {
 	return 1;
 }
 
-CMD:famedplate(playerid, params[])
-{
-	if(PlayerInfo[playerid][pFamed] < 1)
-		return SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong phai la famed!");
+// CMD:famedplate(playerid, params[])
+// {
+// 	if(PlayerInfo[playerid][pFamed] < 1)
+// 		return SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong phai la famed!");
 
-	new string[128], Float: vHealth, inpveh;
-	if(IsPlayerConnected(playerid))
-	{
-		if(isnull(params))
-			return SendClientMessageEx(playerid, COLOR_GREY, "SU DUNG: /famedplate [os/cos/famed/remove]");
+// 	new string[128], Float: vHealth, inpveh;
+// 	if(IsPlayerConnected(playerid))
+// 	{
+// 		if(isnull(params))
+// 			return SendClientMessageEx(playerid, COLOR_GREY, "SU DUNG: /famedplate [os/cos/famed/remove]");
 
-		inpveh = false;
-		for(new d = 0 ; d < MAX_PLAYERVEHICLES; d++)
-		{
-			if(IsPlayerInVehicle(playerid, PlayerVehicleInfo[playerid][d][pvId]))
-			{
-				GetVehicleHealth(PlayerVehicleInfo[playerid][d][pvId], vHealth);
-				inpveh = 1;
+// 		inpveh = false;
+// 		for(new d = 0 ; d < MAX_PLAYERVEHICLES; d++)
+// 		{
+// 			if(IsPlayerInVehicle(playerid, PlayerVehicleInfo[playerid][d][pvId]))
+// 			{
+// 				GetVehicleHealth(PlayerVehicleInfo[playerid][d][pvId], vHealth);
+// 				inpveh = 1;
 
-				if(vHealth < 800)
-					return SendClientMessageEx(playerid, COLOR_LIGHTRED, "Xin sua chua chiec xe cua ban truoc khi thay the plate.");
+// 				if(vHealth < 800)
+// 					return SendClientMessageEx(playerid, COLOR_LIGHTRED, "Xin sua chua chiec xe cua ban truoc khi thay the plate.");
 
-				if(strcmp(params, "os", true) == 0)
-				{
-					format(string, sizeof(string), "{29942B}OLD-SCHOOL");
-					format(PlayerVehicleInfo[playerid][d][pvPlate], 32, "%s", string);
-					SendClientMessageEx(playerid, COLOR_FAMED, "Xe cua ban se suat hien o diem Chartered Old-School Plate,xin vui long doi trong giat lat...");
-					cmd_park(playerid, params); //Save a few lines of code here xD
-				}
-				else if(strcmp(params, "cos", true) == 0)
-				{
-					if(PlayerInfo[playerid][pFamed] < 2) return SendClientMessageEx(playerid, COLOR_GRAD2, "ban khong phai la famed level cao de thuc hien lenh nay, Xin loi.");
-					format(string, sizeof(string), "{F2B602}COS");
-					format(PlayerVehicleInfo[playerid][d][pvPlate], 32, "%s", string);
-					SendClientMessageEx(playerid, COLOR_FAMED, "Xe cua ban se suat hien o diem Chartered Old-School Plate,xin vui long doi trong giat lat...");
-					cmd_park(playerid, params); //Save a few lines of code here xD
-				}
-				else if(strcmp(params, "famed", true) == 0)
-				{
-					if(PlayerInfo[playerid][pFamed] < 3) return SendClientMessageEx(playerid, COLOR_GRAD2, "ban khong phai la famed level cao de thuc hien lenh nay, Xin loi.");
-					format(string, sizeof(string), "{99FF00}FAMED");
-					format(PlayerVehicleInfo[playerid][d][pvPlate], 32, "%s", string);
-					SendClientMessageEx(playerid, COLOR_FAMED, "Xe cua ban se suat hien o diem Famed, xin vui long doi trong giat lat...");
-					cmd_park(playerid, params); //Save a few lines of code here xD
-				}
-				else if(strcmp(params, "remove", true) == 0)
-				{
-					PlayerVehicleInfo[playerid][d][pvPlate] = 0;
-					SendClientMessageEx(playerid, COLOR_FAMED, "Xe cua ban se suat hien o diem mac dinh, xin vui long doi trong giat lat...");
-					cmd_park(playerid, params); //Save a few lines of code here xD
-				}
-				else
-					return SendClientMessageEx(playerid, COLOR_GREY, "SU DUNG: /famedplate [os/cos/famed/remove]");
-			}
-		}
+// 				if(strcmp(params, "os", true) == 0)
+// 				{
+// 					format(string, sizeof(string), "{29942B}OLD-SCHOOL");
+// 					format(PlayerVehicleInfo[playerid][d][pvPlate], 32, "%s", string);
+// 					SendClientMessageEx(playerid, COLOR_FAMED, "Xe cua ban se suat hien o diem Chartered Old-School Plate,xin vui long doi trong giat lat...");
+// 					cmd_park(playerid, params); //Save a few lines of code here xD
+// 				}
+// 				else if(strcmp(params, "cos", true) == 0)
+// 				{
+// 					if(PlayerInfo[playerid][pFamed] < 2) return SendClientMessageEx(playerid, COLOR_GRAD2, "ban khong phai la famed level cao de thuc hien lenh nay, Xin loi.");
+// 					format(string, sizeof(string), "{F2B602}COS");
+// 					format(PlayerVehicleInfo[playerid][d][pvPlate], 32, "%s", string);
+// 					SendClientMessageEx(playerid, COLOR_FAMED, "Xe cua ban se suat hien o diem Chartered Old-School Plate,xin vui long doi trong giat lat...");
+// 					cmd_park(playerid, params); //Save a few lines of code here xD
+// 				}
+// 				else if(strcmp(params, "famed", true) == 0)
+// 				{
+// 					if(PlayerInfo[playerid][pFamed] < 3) return SendClientMessageEx(playerid, COLOR_GRAD2, "ban khong phai la famed level cao de thuc hien lenh nay, Xin loi.");
+// 					format(string, sizeof(string), "{99FF00}FAMED");
+// 					format(PlayerVehicleInfo[playerid][d][pvPlate], 32, "%s", string);
+// 					SendClientMessageEx(playerid, COLOR_FAMED, "Xe cua ban se suat hien o diem Famed, xin vui long doi trong giat lat...");
+// 					cmd_park(playerid, params); //Save a few lines of code here xD
+// 				}
+// 				else if(strcmp(params, "remove", true) == 0)
+// 				{
+// 					PlayerVehicleInfo[playerid][d][pvPlate] = 0;
+// 					SendClientMessageEx(playerid, COLOR_FAMED, "Xe cua ban se suat hien o diem mac dinh, xin vui long doi trong giat lat...");
+// 					cmd_park(playerid, params); //Save a few lines of code here xD
+// 				}
+// 				else
+// 					return SendClientMessageEx(playerid, COLOR_GREY, "SU DUNG: /famedplate [os/cos/famed/remove]");
+// 			}
+// 		}
 
-		if(inpveh == 0)
-			return SendClientMessageEx(playerid, COLOR_GRAD2, "Ban khong o ben trong chiec xe cua ban!");
-	}
-	return 1;
-}
+// 		if(inpveh == 0)
+// 			return SendClientMessageEx(playerid, COLOR_GRAD2, "Ban khong o ben trong chiec xe cua ban!");
+// 	}
+// 	return 1;
+// }
 
 CMD:fmembers(playerid, params[])
 {

@@ -732,13 +732,6 @@ public OnPlayerLoad(playerid)
 
 	
     SetUnreadMailsNotification(playerid);
-    #if defined zombiemode
-   	if(zombieevent == 1)
-	{
-		format(string, sizeof(string), "SELECT `id` FROM `zombie` WHERE `id` = '%d'", GetPlayerSQLId(playerid));
-		mysql_function_query(MainPipeline, string, true, "OnZombieCheck", "i", playerid);
-	}
-	#endif
 
 	if(PlayerInfo[playerid][pWeedObject] != 0) {
 	    for(new i; i < MAX_PLANTS; i++)

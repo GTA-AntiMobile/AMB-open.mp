@@ -693,11 +693,31 @@ static Prev_UpdateListitems(playerid, page, selected, totalItems) {
 }
 
 static Prev_DeletePointers(playerid) {
+    if(playerid < 0 || playerid >= MAX_PLAYERS) {
+        return;
+    }
+    
+    if(Prev@PlayerListitemPointer[playerid] == MEM_NULLPTR) {
+        return;
+    }
+    
+    new numItems = Prev@PlayerDialogNumListitems[playerid];
+    
+    if(numItems <= 0 || numItems > 1000) {
+        Prev@PlayerDialogNumListitems[playerid] = 0;
+        Prev@PlayerListitemPointer[playerid] = MEM_NULLPTR;
+        return;
+    }
+    
     new Pointer:listitemPointer;
 	new Pointer:listitemTextPointer;
 
-	for (new i = 0; i < Prev@PlayerDialogNumListitems[playerid]; i++) {
+	for (new i = 0; i < numItems; i++) {
 	    listitemPointer = Pointer:MEM_get_val(Prev@PlayerListitemPointer[playerid], i);
+	    
+	    if(listitemPointer == MEM_NULLPTR) {
+	        continue;
+	    }
 
 	    listitemTextPointer = Pointer:MEM_get_val(listitemPointer, 1);
 		if (listitemTextPointer != MEM_NULLPTR) {
@@ -710,6 +730,7 @@ static Prev_DeletePointers(playerid) {
 	MEM_delete(Prev@PlayerListitemPointer[playerid]);
 
 	Prev@PlayerListitemPointer[playerid] = MEM_NULLPTR;
+	Prev@PlayerDialogNumListitems[playerid] = 0;
 }
 
 static Prev_HidePlayerDialog(playerid) {
@@ -901,9 +922,15 @@ public OnFilterScriptExit() {
 #endif
 
 public OnPlayerConnect(playerid) {
-    Prev@CancelSelection[playerid] = false;
-	Prev@PlayerDialogID[playerid] = -1;
-	Prev@PlayerListitemPointer[playerid] = MEM_NULLPTR;
+    if(playerid >= 0 && playerid < MAX_PLAYERS) {
+        Prev@CancelSelection[playerid] = false;
+        Prev@PlayerDialogID[playerid] = -1;
+        Prev@PlayerListitemPointer[playerid] = MEM_NULLPTR;
+        Prev@PlayerDialogListitem[playerid] = 0;
+        Prev@PlayerDialogNumListitems[playerid] = 0;
+        Prev@PlayerDialogPage[playerid] = 0;
+        Prev@PlayerDialogTickCount[playerid] = 0;
+    }
 
 	#if defined PDialog_OnPlayerConnect
 		return PDialog_OnPlayerConnect(playerid);
@@ -922,9 +949,19 @@ public OnPlayerConnect(playerid) {
 #endif
 
 public OnPlayerDisconnect(playerid, reason) {
-    if (Prev@PlayerListitemPointer[playerid] != MEM_NULLPTR) {
-		Prev_DeletePointers(playerid);
-	}
+    if(playerid >= 0 && playerid < MAX_PLAYERS) {
+        if (Prev@PlayerListitemPointer[playerid] != MEM_NULLPTR) {
+            Prev_DeletePointers(playerid);
+        }
+        
+        Prev@CancelSelection[playerid] = false;
+        Prev@PlayerDialogID[playerid] = -1;
+        Prev@PlayerDialogListitem[playerid] = 0;
+        Prev@PlayerDialogNumListitems[playerid] = 0;
+        Prev@PlayerDialogPage[playerid] = 0;
+        Prev@PlayerDialogTickCount[playerid] = 0;
+        Prev@PlayerListitemPointer[playerid] = MEM_NULLPTR;
+    }
 
 	#if defined PDialog_OnPlayerDisconnect
 		return PDialog_OnPlayerDisconnect(playerid, reason);

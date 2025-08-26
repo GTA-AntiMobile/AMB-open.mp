@@ -98,7 +98,7 @@ native WP_Hash(buffer[], len, const str[]);
 #define			MAX_RFLTEAMS				200
 #define			MAX_GANGTAGS				150
 //#define 		SHOPAUTOMATED
-#define 		zombiemode
+//#define 		zombiemode
 #define 		event_chancegambler
 
 // strcpy - Simon / Y_LESS
@@ -226,6 +226,8 @@ native WP_Hash(buffer[], len, const str[]);
 #define 		DIALOG_SHOWSCORES 			11
 #define 		DIALOG_NAMECHANGE 			261
 #define 		DIALOG_NAMECHANGE2 			262
+#define 		DIALOG_ADMIN_INFO 			263
+#define 		DIALOG_ADMIN_LIST 			264
 #define			BIGEARS						(10)
 #define			BIGEARS2					(20)
 #define			BIGEARS3					(30)
@@ -963,30 +965,7 @@ native WP_Hash(buffer[], len, const str[]);
 #define ELEVATOR_STATE_MOVING   (2)
 #define INVALID_FLOOR           (-1)
 
-			/*  ---------------- mSelection ----------------- */
-#define mS_TOTAL_ITEMS         	1000 // Max amount of items from all lists
-#define mS_TOTAL_LISTS			20 // Max amount of lists
-#define mS_TOTAL_ROT_ZOOM		100 // Max amount of items using extra information like zoom or rotations
-#define mS_CUSTOM_MAX_ITEMS		20
-#define mS_INVALID_LISTID		mS_TOTAL_LISTS
-#define mS_CUSTOM_LISTID		(mS_TOTAL_LISTS+1)
-#define mS_NEXT_TEXT   "Next"
-#define mS_PREV_TEXT   "Prev"
-#define mS_CANCEL_TEXT   "Cancel"
-#define mS_SELECTION_ITEMS 		21
-#define mS_ITEMS_PER_LINE  		7
-#define mS_DIALOG_BASE_X   	75.0
-#define mS_DIALOG_BASE_Y   	130.0
-#define mS_DIALOG_WIDTH    	550.0
-#define mS_DIALOG_HEIGHT   	180.0
-#define mS_SPRITE_DIM_X    	60.0
-#define mS_SPRITE_DIM_Y    	70.0
-#define mS_LIST_START			0
-#define mS_LIST_END				1
-#define mS_ITEM_MODEL			0
-#define mS_ITEM_ROT_ZOOM_ID 	1
-
-			/*  ---------------- MySQL ----------------- */
+/*  ---------------- MySQL ----------------- */
 #define 		NO_THREAD 						-1
 #define 		NO_EXTRAID 						-1
 #define 		LOADUSERDATA_THREAD 			1

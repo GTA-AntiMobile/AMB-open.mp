@@ -156,7 +156,7 @@ stock GetVehicleOwnerAndSlot(vehicleid, &ownerid, &slot)
     ownerid = INVALID_PLAYER_ID;
     slot = -1;
     
-    for(new i = 0; i < MAX_PLAYERS; i++) {
+    foreach(new i: Player) {
         if(!IsPlayerConnected(i)) continue;
         
         for(new v = 0; v < MAX_PLAYERVEHICLES; v++) {
@@ -273,7 +273,7 @@ stock ApplyEngineUpgrade(vehicleid, driverid = INVALID_PLAYER_ID)
     if(level == 0) return 1;
     
     if(driverid == INVALID_PLAYER_ID) {
-        for(new i = 0; i < MAX_PLAYERS; i++) {
+        foreach(new i: Player) {
             if(IsPlayerInVehicle(i, vehicleid) && GetPlayerVehicleSeat(i) == 0) {
                 driverid = i;
                 break;
@@ -645,7 +645,7 @@ public EngineMonitor()
         if(level == 0) continue;
         
         new driverid = INVALID_PLAYER_ID;
-        for(new i = 0; i < MAX_PLAYERS; i++) {
+        foreach(new i: Player) {
             if(IsPlayerInVehicle(i, vehicleid) && GetPlayerVehicleSeat(i) == 0) {
                 driverid = i;
                 break;

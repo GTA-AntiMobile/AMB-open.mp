@@ -578,7 +578,7 @@ hook OnGameModeInit()
     SetTimer("PlantHealthDecayTimer", 300000, true);
     
     // Khoi tao inventory cho tat ca players (neu can)
-    for(new i = 0; i < MAX_PLAYERS; i++)
+    foreach(new i: Player)
     {
         if(IsPlayerConnected(i))
         {
@@ -843,7 +843,7 @@ CMD:plantinfo(playerid, params[])
         if(PlantData[i][plantExists]) totalPlants++;
     }
     
-    for(new i = 0; i < MAX_PLAYERS; i++)
+    foreach(new i: Player)
     {
         if(IsPlayerConnected(i) && GetPlayerPlantCount(i) > 0) activePlayers++;
     }

@@ -154,16 +154,7 @@ task SyncUp[60000]()
 		if(PlayerInfo[i][pDefendTime] > 0) {
 			PlayerInfo[i][pDefendTime] -= 1;
 		}
-		#if defined zombiemode
-		if(GetPVarType(i, "pZombieBit"))
-		{
-		    new Float:health;
-		    GetPlayerHealth(i, health);
-		    SetPlayerHealth(i, health - 10.0);
-		    SendClientMessageEx(i, COLOR_LIGHTBLUE, "* Mat 10 suc khoe do viruts.");
-		    SendClientMessageEx(i, COLOR_LIGHTBLUE, "* Tim mot bac si de chua benh cho ban!");
-		}
-		#endif
+
 		switch(GetPVarInt(i, "STD")) {
 			case 1: {
 				new Float: health;
@@ -793,14 +784,6 @@ task EMSUpdate[5000]()
 		}
 	    if(GetPVarInt(i, "Injured"))
 	    {
-			#if defined zombiemode
-	        if(zombieevent == 1 && GetPVarType(i, "pZombieBit"))
-			{
-			    KillEMSQueue(i);
-				ClearAnimations(i);
-				MakeZombie(i);
-			}
-			#endif
 	        if(GetPVarInt(i, "EMSAttempt") != 0)
 			{
 
@@ -2079,9 +2062,9 @@ task hungerGames[1000]()
 			hgCountdown--;
 			
 			format(string, sizeof(string), "Thoi gian con lai toi khi bat dau: %d", hgCountdown);
-			for(new i = 0; i < MAX_PLAYERS; i++)
+			foreach(new i: Player)
 			{
-				if(HungerPlayerInfo[i][hgInEvent] == 1)
+				if(IsPlayerConnected(i) && gPlayerLogged{i} && HungerPlayerInfo[i][hgInEvent] == 1)
 				{
 					PlayerTextDrawSetString(i, HungerPlayerInfo[i][hgTimeLeftText], string);
 				}
@@ -2097,9 +2080,9 @@ task hungerGames[1000]()
 			}
 			else if(hgCountdown == 30)
 			{
-				for(new i = 0; i < MAX_PLAYERS; i++)
+				foreach(new i: Player)
 				{
-					if(HungerPlayerInfo[i][hgInEvent] == 1)
+					if(IsPlayerConnected(i) && gPlayerLogged{i} && HungerPlayerInfo[i][hgInEvent] == 1)
 					{
 						SendClientMessageEx(i, COLOR_LIGHTBLUE, "* Su kien se duoc bat dau trong 30 giay nua...");
 						SendClientMessageEx(i, COLOR_LIGHTBLUE, "* Godmode bi vo hieu hoa, ba lo se suat hien sau 30 giay...");
@@ -2113,9 +2096,9 @@ task hungerGames[1000]()
 			hgActive = 2;
 			
 			format(string, sizeof(string), "Thoi gian con lai toi khi bat dau: %d", hgCountdown);
-			for(new i = 0; i < MAX_PLAYERS; i++)
+			foreach(new i: Player)
 			{
-				if(HungerPlayerInfo[i][hgInEvent] == 1)
+				if(IsPlayerConnected(i) && gPlayerLogged{i} && HungerPlayerInfo[i][hgInEvent] == 1)
 				{
 					PlayerTextDrawSetString(i, HungerPlayerInfo[i][hgTimeLeftText], string);
 					
@@ -2145,9 +2128,9 @@ task hungerGames[1000]()
 task fpsCounterUpdate[500]()
 {
 	new string[64];
-	for(new i = 0; i < MAX_PLAYERS; i++)
+	foreach(new i: Player)
 	{
-		if(GetPVarInt(i, "FPSToggle") == 1)
+		if(IsPlayerConnected(i) && gPlayerLogged{i} && GetPVarInt(i, "FPSToggle") == 1)
 		{
 			format(string, sizeof(string), "%d", pFPS[i]);
 			PlayerTextDrawSetString(i, pFPSCounter[i], string);

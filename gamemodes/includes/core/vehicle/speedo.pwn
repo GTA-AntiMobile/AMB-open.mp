@@ -66,31 +66,26 @@ stock UpdateSpeedoDigits(playerid, speed)
     new tens = (speed / 10) % 10;
     new ones = speed % 10;
     
-    // Dynamic color based on speed
     new color;
     if(speed > 150)
-        color = 0xFF0000FF;      // Red for dangerous speed
+        color = 0xFF0000FF;
     else if(speed > 100)
-        color = 0xFF6600FF;      // Orange for high speed
+        color = 0xFF6600FF;
     else
-        color = 0xFFFFFFFF;      // White for normal speed
+        color = 0xFFFFFFFF;
     
-    // Update hundreds digit
     PlayerTextDrawSetString(playerid, Speedo_PTD[playerid][0], GetSpeedoTextureName(hundreds));
     PlayerTextDrawColour(playerid, Speedo_PTD[playerid][0], color);
     PlayerTextDrawShow(playerid, Speedo_PTD[playerid][0]);
     
-    // Update tens digit
     PlayerTextDrawSetString(playerid, Speedo_PTD[playerid][1], GetSpeedoTextureName(tens));
     PlayerTextDrawColour(playerid, Speedo_PTD[playerid][1], color);
     PlayerTextDrawShow(playerid, Speedo_PTD[playerid][1]);
     
-    // Update ones digit
     PlayerTextDrawSetString(playerid, Speedo_PTD[playerid][2], GetSpeedoTextureName(ones));
     PlayerTextDrawColour(playerid, Speedo_PTD[playerid][2], color);
     PlayerTextDrawShow(playerid, Speedo_PTD[playerid][2]);
     
-    // Keep KM/H always white
     PlayerTextDrawColour(playerid, Speedo_PTD[playerid][5], 0xFFFFFFFF);
     PlayerTextDrawShow(playerid, Speedo_PTD[playerid][5]);
 }
@@ -101,8 +96,8 @@ stock UpdateSpeedoDigits(playerid, speed)
 
 stock CreateSpeedoTextDraws(playerid)
 {
-    Speedo_PTD[playerid][0] = CreatePlayerTextDraw(playerid, 470.000, 346.000, "mdl-2004:Asset0");
-    PlayerTextDrawTextSize(playerid, Speedo_PTD[playerid][0], 22.000, 25.000);
+    Speedo_PTD[playerid][0] = CreatePlayerTextDraw(playerid, 474.000, 346.000, "mdl-2004:Asset0");
+    PlayerTextDrawTextSize(playerid, Speedo_PTD[playerid][0], 18.000, 25.000);
     PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][0], TEXT_DRAW_ALIGN_LEFT);
     PlayerTextDrawColour(playerid, Speedo_PTD[playerid][0], -1);
     PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][0], 0);
@@ -111,8 +106,8 @@ stock CreateSpeedoTextDraws(playerid)
     PlayerTextDrawFont(playerid, Speedo_PTD[playerid][0], TEXT_DRAW_FONT_SPRITE_DRAW);
     PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][0], true);
 
-    Speedo_PTD[playerid][1] = CreatePlayerTextDraw(playerid, 482.000, 346.000, "mdl-2004:Asset0");
-    PlayerTextDrawTextSize(playerid, Speedo_PTD[playerid][1], 22.000, 25.000);
+    Speedo_PTD[playerid][1] = CreatePlayerTextDraw(playerid, 484.000, 346.000, "mdl-2004:Asset0");
+    PlayerTextDrawTextSize(playerid, Speedo_PTD[playerid][1], 18.000, 25.000);
     PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][1], TEXT_DRAW_ALIGN_LEFT);
     PlayerTextDrawColour(playerid, Speedo_PTD[playerid][1], -1);
     PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][1], 0);
@@ -122,7 +117,7 @@ stock CreateSpeedoTextDraws(playerid)
     PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][1], true);
 
     Speedo_PTD[playerid][2] = CreatePlayerTextDraw(playerid, 494.000, 346.000, "mdl-2004:Asset0");
-    PlayerTextDrawTextSize(playerid, Speedo_PTD[playerid][2], 22.000, 25.000);
+    PlayerTextDrawTextSize(playerid, Speedo_PTD[playerid][2], 18.000, 25.000);
     PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][2], TEXT_DRAW_ALIGN_LEFT);
     PlayerTextDrawColour(playerid, Speedo_PTD[playerid][2], -1);
     PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][2], 0);
@@ -141,8 +136,8 @@ stock CreateSpeedoTextDraws(playerid)
     PlayerTextDrawFont(playerid, Speedo_PTD[playerid][3], TEXT_DRAW_FONT_2);
     PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][3], true);
 
-    Speedo_PTD[playerid][4] = CreatePlayerTextDraw(playerid, 516.000, 368.000, "ML");
-    PlayerTextDrawLetterSize(playerid, Speedo_PTD[playerid][4], 0.260, 0.999);
+    Speedo_PTD[playerid][4] = CreatePlayerTextDraw(playerid, 515.000, 368.000, "ML");
+    PlayerTextDrawLetterSize(playerid, Speedo_PTD[playerid][4], 0.259, 0.999);
     PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][4], TEXT_DRAW_ALIGN_LEFT);
     PlayerTextDrawColour(playerid, Speedo_PTD[playerid][4], -1);
     PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][4], 1);
@@ -151,10 +146,10 @@ stock CreateSpeedoTextDraws(playerid)
     PlayerTextDrawFont(playerid, Speedo_PTD[playerid][4], TEXT_DRAW_FONT_2);
     PlayerTextDrawSetProportional(playerid, Speedo_PTD[playerid][4], true);
 
-    Speedo_PTD[playerid][5] = CreatePlayerTextDraw(playerid, 512.000, 353.000, "KM/H");
-    PlayerTextDrawLetterSize(playerid, Speedo_PTD[playerid][5], 0.230, 1.399);
-    PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][5], TEXT_DRAW_ALIGN_LEFT);
-    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][5], -1);
+    Speedo_PTD[playerid][5] = CreatePlayerTextDraw(playerid, 519.000, 357.000, "KM/H");
+    PlayerTextDrawLetterSize(playerid, Speedo_PTD[playerid][5], 0.189, 1.098);
+    PlayerTextDrawAlignment(playerid, Speedo_PTD[playerid][5], TEXT_DRAW_ALIGN_CENTER);
+    PlayerTextDrawColour(playerid, Speedo_PTD[playerid][5], -2686721);
     PlayerTextDrawSetShadow(playerid, Speedo_PTD[playerid][5], 0);
     PlayerTextDrawSetOutline(playerid, Speedo_PTD[playerid][5], 0);
     PlayerTextDrawBackgroundColour(playerid, Speedo_PTD[playerid][5], 150);
@@ -232,17 +227,14 @@ public UpdateSpeedometer(playerid)
         new Float:currentSpeed = floatsqroot(vx*vx + vy*vy + vz*vz) * 181.5;
         new speed = floatround(currentSpeed);
         
-        // Ensure speed is within reasonable bounds
         if(speed < 0) speed = 0;
         if(speed > 999) speed = 999;
         
-        // Always update for smoother display
         if(PlayerSpeedoData[playerid][vs_LastSpeed] != speed)
         {
             PlayerSpeedoData[playerid][vs_LastSpeed] = speed;
             PlayerSpeedoData[playerid][vs_LastSpeedFloat] = currentSpeed;
             
-            // Update digital speed display using texture digits
             UpdateSpeedoDigits(playerid, speed);
         }
     }
@@ -256,7 +248,6 @@ public UpdateSpeedometer(playerid)
         {
             PlayerSpeedoData[playerid][vs_LastFuel] = fuelInt;
             
-            // Update fuel display with text
             new fuelText[16];
             format(fuelText, sizeof(fuelText), "%.1f", fuel);
             PlayerTextDrawSetString(playerid, Speedo_PTD[playerid][3], fuelText);
@@ -264,7 +255,6 @@ public UpdateSpeedometer(playerid)
         }
     }
     
-    // Ensure all TextDraws are visible every few updates
     if(PlayerSpeedoData[playerid][vs_UpdateCounter] % 10 == 0)
     {
         for(new i = 0; i < 6; i++)
