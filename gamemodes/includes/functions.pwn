@@ -1,4 +1,99 @@
 /*  ---------------- FUNCTIONS ----------------- */
+
+// Safe array bounds checking functions
+stock IsValidPlayerID(playerid) {
+    return (playerid >= 0 && playerid < MAX_PLAYERS);
+}
+
+stock IsValidVehicleSlot(slot) {
+    return (slot >= 0 && slot < MAX_PLAYERVEHICLES);
+}
+
+stock IsValidVehicleID(vehicleid) {
+    return (vehicleid >= 0 && vehicleid < MAX_VEHICLES);
+}
+
+stock SafeGetPlayerVehicle(playerid, vehicleid) {
+    if(!IsValidPlayerID(playerid)) return -1;
+    
+    new vehicleSlot = GetPlayerVehicle(playerid, vehicleid);
+    if(vehicleSlot >= 0 && vehicleSlot < MAX_PLAYERVEHICLES) {
+        return vehicleSlot;
+    }
+    return -1;
+}
+
+// Memory management and optimization functions
+stock CleanupPlayerData(playerid) {
+    if(!IsValidPlayerID(playerid)) return 0;
+    
+    // Reset all player-specific arrays to prevent memory leaks
+    for(new i = 0; i < MAX_PLAYERVEHICLES; i++) {
+        if(IsValidVehicleSlot(i)) {
+            PlayerVehicleInfo[playerid][i][pvId] = INVALID_PLAYER_VEHICLE_ID;
+            PlayerVehicleInfo[playerid][i][pvModelId] = 0;
+            PlayerVehicleInfo[playerid][i][pvSpawned] = 0;
+            PlayerVehicleInfo[playerid][i][pvSlotId] = 0;
+            PlayerVehicleInfo[playerid][i][pvPosX] = 0.0;
+            PlayerVehicleInfo[playerid][i][pvPosY] = 0.0;
+            PlayerVehicleInfo[playerid][i][pvPosZ] = 0.0;
+            PlayerVehicleInfo[playerid][i][pvPosAngle] = 0.0;
+            PlayerVehicleInfo[playerid][i][pvLock] = 0;
+            PlayerVehicleInfo[playerid][i][pvLocked] = 0;
+            PlayerVehicleInfo[playerid][i][pvPaintJob] = -1;
+            PlayerVehicleInfo[playerid][i][pvColor1] = 0;
+            PlayerVehicleInfo[playerid][i][pvColor2] = 0;
+            PlayerVehicleInfo[playerid][i][pvPrice] = 0;
+            PlayerVehicleInfo[playerid][i][pvTicket] = 0;
+            PlayerVehicleInfo[playerid][i][pvImpounded] = 0;
+            PlayerVehicleInfo[playerid][i][pvVW] = 0;
+            PlayerVehicleInfo[playerid][i][pvInt] = 0;
+            PlayerVehicleInfo[playerid][i][pvFuel] = 0.0;
+            PlayerVehicleInfo[playerid][i][pvHealth] = 1000.0;
+            PlayerVehicleInfo[playerid][i][pvAllowedPlayerId] = INVALID_PLAYER_ID;
+            PlayerVehicleInfo[playerid][i][pvPark] = 0;
+            PlayerVehicleInfo[playerid][i][pvDisabled] = 0;
+            PlayerVehicleInfo[playerid][i][pvPlate] = 0;
+            PlayerVehicleInfo[playerid][i][pvCrashFlag] = 0;
+            PlayerVehicleInfo[playerid][i][pvCrashVW] = 0;
+            PlayerVehicleInfo[playerid][i][pvCrashX] = 0.0;
+            PlayerVehicleInfo[playerid][i][pvCrashY] = 0.0;
+            PlayerVehicleInfo[playerid][i][pvCrashZ] = 0.0;
+            PlayerVehicleInfo[playerid][i][pvCrashAngle] = 0.0;
+            PlayerVehicleInfo[playerid][i][pvEngineUpgrade] = 0;
+            PlayerVehicleInfo[playerid][i][pvWepUpgrade] = 0;
+            
+            for(new j = 0; j < 3; j++) {
+                PlayerVehicleInfo[playerid][i][pvWeapons][j] = 0;
+            }
+            
+            for(new k = 0; k < 14; k++) {
+                PlayerVehicleInfo[playerid][i][pvMods][k] = 0;
+            }
+        }
+    }
+    
+    return 1;
+}
+
+stock OptimizeMemoryUsage() {
+    // Clean up disconnected players' data
+    foreach(new i: Player) {
+        if(!IsPlayerConnected(i) || !gPlayerLogged{i}) {
+            CleanupPlayerData(i);
+        }
+    }
+}
+
+stock SafePlayerLoop() {
+    new connectedCount = 0;
+    foreach(new i: Player) {
+        if(IsPlayerConnected(i) && gPlayerLogged{i}) {
+            connectedCount++;
+        }
+    }
+    return connectedCount;
+}
 			
 #if defined zombiemode
 
@@ -873,14 +968,9 @@ GetPlayerToySlots(playerid)
 }
 
 CheckPlayerVehiclesForDesync(playerid) {
-	for(new i = 0; i != MAX_PLAYERVEHICLES; ++i) {
-		if(PlayerVehicleInfo[playerid][i][pvId] != INVALID_PLAYER_VEHICLE_ID && GetVehicleModel(PlayerVehicleInfo[playerid][i][pvId]) != PlayerVehicleInfo[playerid][i][pvModelId]) {
-			UnloadPlayerVehicles(playerid);
-			LoadPlayerVehicles(playerid);
-			return SendClientMessageEx(playerid, COLOR_YELLOW, "Xe cua ban thoi duoc dong bo hoa; da duoc khoi phuc ve vi tri dau xe de dam bao khong co loi phat sinh.");
-	    }
-	}
-	return 1;
+	// DISABLED: Old vehicle sync check - now handled by new garage system
+	// Use the new comprehensive sync system instead
+	return SyncVehicleSystem(playerid);
 }
 
 Vehicle_ResetData(iVehicleID) {
@@ -3122,172 +3212,81 @@ Group_ListGroups(iPlayerID, iDialogID = DIALOG_LISTGROUPS) {
 }
 
 			/*  ---------------- PUBLIC FUNCTIONS -----------------  */
-new GamemodeLoadingStage = 0;
-
 public InitiateGamemode()
 {
 	AddPlayerClass(0, 1958.33, 1343.12, 15.36, 269.15, 0, 0, 0, 0, 0, 0);
 	AddPlayerClass(0, 1958.3783, 1343.1572, 15.3746, 269.1425, 0, 0, 0, 0, 0, 0);
 	SetGameModeText(SERVER_GM_TEXT);
 	
-	GamemodeLoadingStage = 0;
-	
-	SetTimer("GamemodeLoadingTimer", 50, false);
-	
-	print("[Server] Starting optimized staged loading process...");
-	printf("[Server] Estimated total loading time:z ~15-25 seconds");
+	g_mysql_LoadMOTD();
+	g_mysql_AccountOnlineReset();
+	g_mysql_LoadGiftBox();
+	mysql_LoadCrates();
+	LoadHouses();
+	LoadDynamicDoors();
+	LoadDynamicMapIcons();
+	LoadMailboxes();
+	LoadBusinesses();
+	LoadAuctions();
+	LoadTxtLabels();
+	LoadPlants();
+	LoadSpeedCameras();
+	LoadPayNSprays();
+	LoadArrestPoints();
+	LoadImpoundPoints();
+	LoadRelayForLifeTeams();
+	g_mysql_LoadSales();
+	g_mysql_LoadPrices();
+	LoadBusinessSales();
+	ToyList = LoadModelSelectionMenu("ToyList.txt");
+	CarList = LoadModelSelectionMenu("CarList.txt");
+	PlaneList = LoadModelSelectionMenu("PlaneList.txt");
+	BoatList = LoadModelSelectionMenu("BoatList.txt");
+	CarList2 = LoadModelSelectionMenu("CarList.txt");
+	CarList3 = LoadModelSelectionMenu("RestrictedCarList.txt");
+	SkinList = LoadModelSelectionMenu("SkinList.txt");
+	NGGShop = CreateDynamicPolygon(shop_vertices);
+	InitTurfWars();
+	LoadTurfWars();
+	InitPaintballArenas();
+	LoadPaintballArenas();	
+	InitEventPoints();
+	LoadEventPoints();
+	LoadGates();
+	LoadElevatorStuff();
+	LoadFamilies();
+	LoadPoints();
+	Misc_Load();
+	InitPokerTables();
+	ResetElevatorQueue();
+	Elevator_Initialize();
+	AntiDeAMX();
+	ShowPlayerMarkers(PLAYER_MARKERS_MODE_STREAMED);
+	ClearReports();
+	CountCitizens();
+	GiftAllowed = 1;
+	ResetNews();
+	ResetVariables();
+	FixServerTime();
+	SetTimer("RotateWheel", 3*1000, false);
+	SetTimer("MailDeliveryTimer", 60000, true);
+	MAXCRATES = 10;
+	gWeather = random(19) + 1;
+	if(gWeather == 1) gWeather=10;
+	SetWeather(gWeather);
+	Streamer_TickRate(125);
+	LoadStreamerStaticVehicles();
+	LoadStreamerDynamicPickups();
+	LoadStreamerDynamic3DTextLabels();
+	UpdateSANewsBroadcast();
+	LoadStreamerDynamicButtons();
+	LoadStreamerDynamicObjects();
+	BikeParkourObjectStage[0] = 0;
+	LoadTextDraws();
+	LoadDynamicGroups();
+	LoadDynamicGroupVehicles();
 	return 1;
-}
-
-forward GamemodeLoadingTimer();
-public GamemodeLoadingTimer()
-{
-	printf("[Loading Stage %d/8] Starting stage %d...", GamemodeLoadingStage+1, GamemodeLoadingStage+1);
-	
-	switch(GamemodeLoadingStage)
-	{
-		case 0: // Essential data only - split MySQL operations
-		{
-			print("[Loading Stage 1/8] Essential database operations...");
-			g_mysql_LoadMOTD();
-			g_mysql_AccountOnlineReset();
-		}
-		case 1: // Giftbox and crates - lighter operations
-		{
-			print("[Loading Stage 2/8] Loading giftbox and crates...");
-			g_mysql_LoadGiftBox();
-			mysql_LoadCrates();
-		}
-		case 2: // Houses only - split heavy operations
-		{
-			print("[Loading Stage 3/8] Loading houses...");
-			LoadHouses();
-		}
-		case 3: // Doors and icons - split from houses
-		{
-			print("[Loading Stage 4/8] Loading doors and map icons...");
-			LoadDynamicDoors();
-			LoadDynamicMapIcons();
-			LoadMailboxes();
-		}
-		case 4: // Businesses and auctions
-		{
-			print("[Loading Stage 5/8] Loading businesses and auctions...");
-			LoadBusinesses();
-			LoadAuctions();
-			LoadTxtLabels();
-			LoadPlants();
-		}
-		case 5: // Points and cameras
-		{
-			print("[Loading Stage 6/8] Loading points and cameras...");
-			LoadSpeedCameras();
-			LoadPayNSprays();
-			LoadArrestPoints();
-			LoadImpoundPoints();
-			LoadRelayForLifeTeams();
-		}
-		case 6: // Shop automation and model menus
-		{
-			print("[Loading Stage 7/8] Loading shop data and model menus...");
-			g_mysql_LoadSales();
-			g_mysql_LoadPrices();
-			LoadBusinessSales();
-			ToyList = LoadModelSelectionMenu("ToyList.txt");
-			CarList = LoadModelSelectionMenu("CarList.txt");
-			PlaneList = LoadModelSelectionMenu("PlaneList.txt");
-			BoatList = LoadModelSelectionMenu("BoatList.txt");
-			CarList2 = LoadModelSelectionMenu("CarList.txt");
-			CarList3 = LoadModelSelectionMenu("RestrictedCarList.txt");
-			SkinList = LoadModelSelectionMenu("SkinList.txt");
-		}
-		case 7: // Game systems - split into smaller chunks
-		{
-			print("[Loading Stage 8/8] Loading game systems part 1...");
-			NGGShop = CreateDynamicPolygon(shop_vertices);
-			InitTurfWars();
-			LoadTurfWars();
-			InitPaintballArenas();
-			LoadPaintballArenas();
-		}
-		case 8: // More game systems
-		{
-			print("[Loading Stage 9/10] Loading game systems part 2...");
-			InitEventPoints();
-			LoadEventPoints();
-			LoadGates();
-			LoadElevatorStuff();
-			LoadFamilies();
-			LoadPoints();
-			Misc_Load();
-		}
-		case 9: // Poker, timers, and misc
-		{
-			print("[Loading Stage 10/10] Final initialization...");
-			InitPokerTables();
-			ResetElevatorQueue();
-			Elevator_Initialize();
-			AntiDeAMX();
-			ShowPlayerMarkers(PLAYER_MARKERS_MODE_STREAMED);
-			ClearReports();
-			CountCitizens();
-			GiftAllowed = 1;
-			ResetNews();
-			ResetVariables();
-			FixServerTime();
-			SetTimer("RotateWheel", 3*1000, false);
-			SetTimer("MailDeliveryTimer", 60000, true);
-			MAXCRATES = 10;
-			gWeather = random(19) + 1;
-			if(gWeather == 1) gWeather=10;
-			SetWeather(gWeather);
-		}
-		case 10: // Streamer initialization - split into parts
-		{
-			print("[Loading Stage 11/12] Streamer initialization...");
-			Streamer_TickRate(125);
-			LoadStreamerStaticVehicles();
-			LoadStreamerDynamicPickups();
-			LoadStreamerDynamic3DTextLabels();
-		}
-		case 11: // Final streamer and completion
-		{
-			print("[Loading Stage 12/12] Final streamer objects and completion...");
-			UpdateSANewsBroadcast();
-			LoadStreamerDynamicButtons();
-			LoadStreamerDynamicObjects();
-			BikeParkourObjectStage[0] = 0;
-			LoadTextDraws();
-			LoadDynamicGroups();
-			LoadDynamicGroupVehicles();
-			
-			// Final initialization
-			AntiDeAMX();
-			ShowPlayerMarkers(PLAYER_MARKERS_MODE_STREAMED);
-			ClearReports();
-			CountCitizens();
-			GiftAllowed = 1;
-			ResetNews();
-			ResetVariables();
-			FixServerTime();
-			SetTimer("RotateWheel", 3*1000, false);
-			SetTimer("MailDeliveryTimer", 60000, true);
-			MAXCRATES = 10;
-			gWeather = random(19) + 1;
-			if(gWeather == 1) gWeather=10;
-			SetWeather(gWeather);
-			
-			print("[Server] All loading stages completed successfully!");
-			print("[Server] Server is now ready for players!");
-			return 1; // Stop the timer
-		}
-	}
-	
-	GamemodeLoadingStage++;
-	
-	SetTimer("GamemodeLoadingTimer", 1000, false);
-	return 1;
-}		
+}	
 
 public CloseWestLobby()
 {
@@ -6489,8 +6488,7 @@ public HealthHackCheck(playerid, giveplayerid)
     return 1;
 }
 
-forward OnPlayerPickUpDynamicPickup(playerid, pickupid);
-public OnPlayerPickUpDynamicPickup(playerid, pickupid)
+hook OnPlayerPickUpDynamicPickup(playerid, pickupid)
 {	
 	new vehicleid = GetPlayerVehicleID(playerid);
 	for(new x = 0; x < sizeof(SpikeStrips); ++x)
@@ -6504,12 +6502,9 @@ public OnPlayerPickUpDynamicPickup(playerid, pickupid)
 				new Float:pos[4];
 				GetVehiclePos(vehicleid, pos[0], pos[1], pos[2]);
 				GetVehicleZAngle(vehicleid, pos[3]);
-				// TODO: This should be more specific to the vehicle
-				// TODO: Bike tires should be checked differently
 
 				if(GetDistanceBetweenPoints(pos[0], pos[1], pos[2], SpikeStrips[x][sX], SpikeStrips[x][sY], SpikeStrips[x][sZ]) <= 4)
 				{
-						// Pop Front
 					SetVehicleTireState(vehicleid, 0, 0, 0, 0);
 				}
 			}
@@ -6550,7 +6545,6 @@ public OnPlayerPickUpDynamicPickup(playerid, pickupid)
 				Businesses[business][bGymBikeVehicles][slot] = vehicleId;
 
 				SendClientMessageEx(playerid, COLOR_WHITE, "Thuc hien theo huong mui ten de tien hanh Parkour.");
-				//SendClientMessageEx(playerid, COLOR_WHITE, "Type /leaveparkour to quit the activity without completing it.");
 
 				bikePickup = CreateDynamicPickup(1318, 14, 2823.5071, -2260.9243, 97.5347, .playerid = playerid, .worldid = GetPlayerVirtualWorld(playerid), .interiorid = 0);
 				SetPVarInt(playerid, "_BikeParkourPickup", bikePickup);
@@ -7113,22 +7107,7 @@ public LoadTruckOld(playerid)
 	return 1;
 }
 
-#if defined zombiemode
-forward OnZombieCheck(playerid);
-public OnZombieCheck(playerid)
-{
-	if(IsPlayerConnected(playerid))
-	{
- 		new rows, fields;
-   		cache_get_data(rows, fields, MainPipeline);
-		if(rows)
-		{
-			MakeZombie(playerid);
-		}
-	}
-	return 1;
-}
-#endif
+
 
 forward LoadTruck(playerid);
 public LoadTruck(playerid)
@@ -7176,26 +7155,6 @@ public LoadTruck(playerid)
 		    SetPVarInt(playerid, "Gas_TrailerID", iTrailer);
 			SetTimerEx("AttachGasTrailer", 500, false, "ii", iTrailer, vehicleid);
 		}
-		/*else if (Businesses[business][bType] == BUSINESS_TYPE_NEWCARDEALERSHIP)
-		{
-			new iModel, iSlot;
-		    for (new i; i < MAX_BUSINESS_DEALERSHIP_VEHICLES; i++)
-		    {
-			    if (Businesses[business][DealershipVehOrder][i]) {
-					iModel = Businesses[business][bModel][i];
-					iSlot = i;
-	 			}
-		    }
-			new Float: fVehPos[4];
-			GetVehiclePos(vehicleid, fVehPos[0], fVehPos[1], fVehPos[2]);
-			GetVehicleZAngle(vehicleid, fVehPos[3]);
-			new iDeliveredVeh = CreateVehicle(iModel, fVehPos[0], fVehPos[1], fVehPos[2] + 3, fVehPos[3], 1, 1, -1);
-			SetVehicleZAngle(iDeliveredVeh, fVehPos[3]);
-			vehicle_lock_doors(iDeliveredVeh);
-
-			SetPVarInt(playerid, "CarryingVehicle", iDeliveredVeh);
-			SetPVarInt(playerid, "CarryingSlot", iSlot);
-		} */
 		SetPVarInt(playerid, "tpTruckRunTimer", floatround(GetPlayerDistanceFromPoint(playerid, Businesses[business][bSupplyPos][0], Businesses[business][bSupplyPos][1], Businesses[business][bSupplyPos][2]) / 100));
 		SetTimerEx("OtherTimerEx", 1000, false, "ii", playerid, TYPE_TPTRUCKRUNTIMER);
 	}
@@ -8348,465 +8307,118 @@ stock FindFreeAttachedObjectSlot(playerid)
 	return index;
 }
 
-stock HideModelSelectionMenu(playerid)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Premium Background with multiple layers and effects
+stock PlayerText:mS_CreatePremiumBGTextDraw(playerid, Float:Xpos, Float:Ypos, Float:Width, Float:Height, bgcolor, accentColor)
 {
-	mS_DestroySelectionMenu(playerid);
-	SetPVarInt(playerid, "mS_ignore_next_esc", 1);
-	CancelSelectTextDraw(playerid);
-	return 1;
-}
-
-stock mS_DestroySelectionMenu(playerid)
-{
-	if(GetPVarInt(playerid, "mS_list_active") == 1)
-	{
-		if(mS_GetPlayerCurrentListID(playerid) == mS_CUSTOM_LISTID)
-		{
-			DeletePVar(playerid, "mS_custom_Xrot");
-			DeletePVar(playerid, "mS_custom_Yrot");
-			DeletePVar(playerid, "mS_custom_Zrot");
-			DeletePVar(playerid, "mS_custom_Zoom");
-			DeletePVar(playerid, "mS_custom_extraid");
-			DeletePVar(playerid, "mS_custom_item_amount");
-		}
-		DeletePVar(playerid, "mS_list_time");
-		SetPVarInt(playerid, "mS_list_active", 0);
-		mS_DestroyPlayerMPs(playerid);
-
-		PlayerTextDrawDestroy(playerid, gHeaderTextDrawId[playerid]);
-		PlayerTextDrawDestroy(playerid, gBackgroundTextDrawId[playerid]);
-		PlayerTextDrawDestroy(playerid, gCurrentPageTextDrawId[playerid]);
-		PlayerTextDrawDestroy(playerid, gNextButtonTextDrawId[playerid]);
-		PlayerTextDrawDestroy(playerid, gPrevButtonTextDrawId[playerid]);
-		PlayerTextDrawDestroy(playerid, gCancelButtonTextDrawId[playerid]);
-
-		gHeaderTextDrawId[playerid] = PlayerText:INVALID_TEXT_DRAW;
-		gBackgroundTextDrawId[playerid] = PlayerText:INVALID_TEXT_DRAW;
-		gCurrentPageTextDrawId[playerid] = PlayerText:INVALID_TEXT_DRAW;
-		gNextButtonTextDrawId[playerid] = PlayerText:INVALID_TEXT_DRAW;
-		gPrevButtonTextDrawId[playerid] = PlayerText:INVALID_TEXT_DRAW;
-		gCancelButtonTextDrawId[playerid] = PlayerText:INVALID_TEXT_DRAW;
-	}
-}
-
-stock LoadModelSelectionMenu(const f_name[])
-{
-	new File:f, str[75];
-	strcpy(str, f_name, sizeof(str));
-	f = fopen(str, io_read);
-	if( !f ) {
-		printf("-mSelection- WARNING: Khong the tai danh sach: \"%s\"", f_name);
-		return mS_INVALID_LISTID;
-	}
-	
-	printf("Loading model selection menu: %s", f_name);
-
-	if(gListAmount >= mS_TOTAL_LISTS)
-	{
-		printf("-mSelection- WARNING: Reached maximum amount of lists, increase mS_TOTAL_LISTS for file: %s", f_name);
-		return mS_INVALID_LISTID;
-	}
-	new tmp_ItemAmount = gItemAmount; // copy value if loading fails
-
-
-	new line[128], idxx;
-	new tmp_mS_strtok[20];
-	new lineCount = 0; // Safety counter to prevent infinite loops
-	new startTime = GetTickCount(); // Add timeout mechanism
-	
-	while(fread(f,line,sizeof(line),false) && lineCount < 10000 && (GetTickCount() - startTime) < 5000) // Max 5 seconds
-	{
-		lineCount++;
-		if(tmp_ItemAmount >= mS_TOTAL_ITEMS)
-		{
-			printf("-mSelection- WARNING: Reached maximum amount of items, increase mS_TOTAL_ITEMS for file: %s", f_name);
-			break;
-		}
-		idxx = 0;
-		if(!line[0] || strlen(line) > 120) continue; // Skip empty lines or overly long lines
-		
-		// Validate line length to prevent buffer overruns
-		new lineLen = strlen(line);
-		if(lineLen == 0) continue;
-		
-		mS_strtok(line, idxx, tmp_mS_strtok);
-		new mID = strval(tmp_mS_strtok);
-		if(0 <= mID < 20000)
-		{
-			gItemList[tmp_ItemAmount][mS_ITEM_MODEL] = mID;
-			new Float:mRotation[3], Float:mZoom = 1.0;
-			new bool:useRotation = false;
-
-			// Add bounds checking for tokenization
-			if(idxx < lineLen) {
-				mS_strtok(line, idxx, tmp_mS_strtok);
-				if(tmp_mS_strtok[0]) {
-					useRotation = true;
-					mRotation[0] = floatstr(tmp_mS_strtok);
-				}
-			}
-			if(idxx < lineLen) {
-				mS_strtok(line, idxx, tmp_mS_strtok);
-				if(tmp_mS_strtok[0]) {
-					useRotation = true;
-					mRotation[1] = floatstr(tmp_mS_strtok);
-				}
-			}
-			if(idxx < lineLen) {
-				mS_strtok(line, idxx, tmp_mS_strtok);
-				if(tmp_mS_strtok[0]) {
-					useRotation = true;
-					mRotation[2] = floatstr(tmp_mS_strtok);
-				}
-			}
-			if(idxx < lineLen) {
-				mS_strtok(line, idxx, tmp_mS_strtok);
-				if(tmp_mS_strtok[0]) {
-					useRotation = true;
-					mZoom = floatstr(tmp_mS_strtok);
-				}
-			}
-			if(useRotation)
-			{
-				new bool:foundRotZoom = false;
-				for(new i=0; i < gRotZoomAmount; i++)
-				{
-					if(gRotZoom[i][0] == mRotation[0] && gRotZoom[i][1] == mRotation[1] && gRotZoom[i][2] == mRotation[2] && gRotZoom[i][3] == mZoom)
-					{
-						foundRotZoom = true;
-						gItemList[tmp_ItemAmount][mS_ITEM_ROT_ZOOM_ID] = i;
-						break;
-					}
-				}
-				if(gRotZoomAmount < mS_TOTAL_ROT_ZOOM)
-				{
-					if(!foundRotZoom)
-					{
-						gRotZoom[gRotZoomAmount][0] = mRotation[0];
-						gRotZoom[gRotZoomAmount][1] = mRotation[1];
-						gRotZoom[gRotZoomAmount][2] = mRotation[2];
-						gRotZoom[gRotZoomAmount][3] = mZoom;
-						gItemList[tmp_ItemAmount][mS_ITEM_ROT_ZOOM_ID] = gRotZoomAmount;
-						gRotZoomAmount++;
-					}
-				}
-				else print("-mSelection- WARNING: Not able to save rotation/zoom information. Reached maximum rotation/zoom information count. Increase '#define mS_TOTAL_ROT_ZOOM' to fix the issue");
-			}
-			else gItemList[tmp_ItemAmount][mS_ITEM_ROT_ZOOM_ID] = -1;
-			tmp_ItemAmount++;
-		}
-	}
-	fclose(f); // Close the file handle
-	
-	printf("Finished loading %s, processed %d lines", f_name, lineCount);
-	
-	if(tmp_ItemAmount > gItemAmount) // any models loaded ?
-	{
-		gLists[gListAmount][mS_LIST_START] = gItemAmount;
-		gItemAmount = tmp_ItemAmount; // copy back
-		gLists[gListAmount][mS_LIST_END] = (gItemAmount-1);
-
-		gListAmount++;
-		return (gListAmount-1);
-	}
-	printf("-mSelection- WARNING: Khong co item duoc tim thay trong tap tin: %s", f_name);
-	return mS_INVALID_LISTID;
-}
-
-
-
-stock mS_strtok(const string[], &index, result[], result_size = sizeof(result))
-{
-    new length = strlen(string);
-    // Skip leading whitespace
-    while ((index < length) && (string[index] <= ' '))
-    {
-        index++;
-    }
-
-    new i = 0;
-    // Extract the token - stop at whitespace or end of string
-    while ((index < length) && (string[index] > ' ') && (i < (result_size - 1)))
-    {
-        result[i++] = string[index++];
-    }
-    result[i] = EOS;
-    
-    // Skip trailing whitespace to prepare for next token
-    while ((index < length) && (string[index] <= ' '))
-    {
-        index++;
-    }
-}
-
-stock mS_GetNumberOfPages(ListID)
-{
-	new ItemAmount = mS_GetAmountOfListItems(ListID);
-	if((ItemAmount >= mS_SELECTION_ITEMS) && (ItemAmount % mS_SELECTION_ITEMS) == 0)
-	{
-		return (ItemAmount / mS_SELECTION_ITEMS);
-	}
-	else return (ItemAmount / mS_SELECTION_ITEMS) + 1;
-}
-
-stock mS_GetNumberOfPagesEx(playerid)
-{
-	new ItemAmount = mS_GetAmountOfListItemsEx(playerid);
-	if((ItemAmount >= mS_SELECTION_ITEMS) && (ItemAmount % mS_SELECTION_ITEMS) == 0)
-	{
-		return (ItemAmount / mS_SELECTION_ITEMS);
-	}
-	else return (ItemAmount / mS_SELECTION_ITEMS) + 1;
-}
-
-stock mS_GetAmountOfListItems(ListID)
-{
-	return (gLists[ListID][mS_LIST_END] - gLists[ListID][mS_LIST_START])+1;
-}
-
-stock mS_GetAmountOfListItemsEx(playerid)
-{
-	return GetPVarInt(playerid, "mS_custom_item_amount");
-}
-
-stock mS_GetPlayerCurrentListID(playerid)
-{
-	if(GetPVarInt(playerid, "mS_list_active") == 1) return GetPVarInt(playerid, "mS_list_id");
-	else return mS_INVALID_LISTID;
-}
-
-stock PlayerText:mS_CreateCurrentPageTextDraw(playerid, Float:Xpos, Float:Ypos)
-{
-	new PlayerText:txtInit;
-   	txtInit = CreatePlayerTextDraw(playerid, Xpos, Ypos, "0/0");
-   	PlayerTextDrawUseBox(playerid, txtInit, false);
-	PlayerTextDrawLetterSize(playerid, txtInit, 0.4, 1.1);
-	PlayerTextDrawFont(playerid, txtInit, 1);
-	PlayerTextDrawSetShadow(playerid, txtInit, 0);
-    PlayerTextDrawSetOutline(playerid, txtInit, 1);
-    PlayerTextDrawColour(playerid, txtInit, 0xACCBF1FF);
-    PlayerTextDrawShow(playerid, txtInit);
-    return txtInit;
-}
-
-stock PlayerText:mS_CreatePlayerDialogButton(playerid, Float:Xpos, Float:Ypos, Float:Width, Float:Height, const button_text[])
-{
- 	new PlayerText:txtInit;
-   	txtInit = CreatePlayerTextDraw(playerid, Xpos, Ypos, button_text);
-   	PlayerTextDrawUseBox(playerid, txtInit, true);
-   	PlayerTextDrawBoxColour(playerid, txtInit, 0x000000FF);
-   	PlayerTextDrawBackgroundColour(playerid, txtInit, 0x000000FF);
-	PlayerTextDrawLetterSize(playerid, txtInit, 0.4, 1.1);
-	PlayerTextDrawFont(playerid, txtInit, 1);
-	PlayerTextDrawSetShadow(playerid, txtInit, 0); // no shadow
-    PlayerTextDrawSetOutline(playerid, txtInit, 0);
-    PlayerTextDrawColour(playerid, txtInit, 0x4A5A6BFF);
-    PlayerTextDrawSetSelectable(playerid, txtInit, true);
-    PlayerTextDrawAlignment(playerid, txtInit, 2);
-    PlayerTextDrawTextSize(playerid, txtInit, Height, Width); // The width and height are reversed for centering.. something the game does <g>
-    PlayerTextDrawShow(playerid, txtInit);
-    return txtInit;
-}
-
-stock PlayerText:mS_CreatePlayerHeaderTextDraw(playerid, Float:Xpos, Float:Ypos, const header_text[])
-{
-	new PlayerText:txtInit;
-   	txtInit = CreatePlayerTextDraw(playerid, Xpos, Ypos, header_text);
-   	PlayerTextDrawUseBox(playerid, txtInit, false);
-	PlayerTextDrawLetterSize(playerid, txtInit, 1.25, 3.0);
-	PlayerTextDrawFont(playerid, txtInit, 0);
-	PlayerTextDrawSetShadow(playerid, txtInit, 0);
-    PlayerTextDrawSetOutline(playerid, txtInit, 1);
-    PlayerTextDrawColour(playerid, txtInit, 0xACCBF1FF);
-    PlayerTextDrawShow(playerid, txtInit);
-    return txtInit;
-}
-
-stock PlayerText:mS_CreatePlayerBGTextDraw(playerid, Float:Xpos, Float:Ypos, Float:Width, Float:Height, bgcolor)
-{
-	new PlayerText:txtBackground = CreatePlayerTextDraw(playerid, Xpos, Ypos,"                                            ~n~"); // enough space for everyone
+	// Main background
+	new PlayerText:txtBackground = CreatePlayerTextDraw(playerid, Xpos, Ypos, "                                            ~n~");
     PlayerTextDrawUseBox(playerid, txtBackground, true);
     PlayerTextDrawBoxColour(playerid, txtBackground, bgcolor);
 	PlayerTextDrawLetterSize(playerid, txtBackground, 5.0, 5.0);
 	PlayerTextDrawFont(playerid, txtBackground, 0);
 	PlayerTextDrawSetShadow(playerid, txtBackground, 0);
     PlayerTextDrawSetOutline(playerid, txtBackground, 0);
-    PlayerTextDrawColour(playerid, txtBackground,0x000000FF);
+    PlayerTextDrawColour(playerid, txtBackground, 0x000000FF);
     PlayerTextDrawTextSize(playerid, txtBackground, Width, Height);
    	PlayerTextDrawBackgroundColour(playerid, txtBackground, bgcolor);
     PlayerTextDrawShow(playerid, txtBackground);
+    
+    // Animated border
+    new PlayerText:txtBorder = CreatePlayerTextDraw(playerid, Xpos - 3.0, Ypos - 3.0, "                                            ~n~");
+    PlayerTextDrawUseBox(playerid, txtBorder, true);
+    PlayerTextDrawBoxColour(playerid, txtBorder, accentColor);
+	PlayerTextDrawLetterSize(playerid, txtBorder, 5.0, 5.0);
+	PlayerTextDrawFont(playerid, txtBorder, 0);
+	PlayerTextDrawSetShadow(playerid, txtBorder, 0);
+    PlayerTextDrawSetOutline(playerid, txtBorder, 0);
+    PlayerTextDrawColour(playerid, txtBorder, 0x000000FF);
+    PlayerTextDrawTextSize(playerid, txtBorder, Width + 6.0, Height + 6.0);
+   	PlayerTextDrawBackgroundColour(playerid, txtBorder, accentColor);
+    PlayerTextDrawShow(playerid, txtBorder);
+    
+    // Corner accents
+    new PlayerText:txtCorner1 = CreatePlayerTextDraw(playerid, Xpos - 3.0, Ypos - 3.0, "~r~");
+    PlayerTextDrawLetterSize(playerid, txtCorner1, 0.8, 1.5);
+    PlayerTextDrawFont(playerid, txtCorner1, 1);
+    PlayerTextDrawColour(playerid, txtCorner1, accentColor);
+    PlayerTextDrawShow(playerid, txtCorner1);
+    
+    new PlayerText:txtCorner2 = CreatePlayerTextDraw(playerid, Xpos + Width + 3.0, Ypos - 3.0, "~r~");
+    PlayerTextDrawLetterSize(playerid, txtCorner2, 0.8, 1.5);
+    PlayerTextDrawFont(playerid, txtCorner2, 1);
+    PlayerTextDrawColour(playerid, txtCorner2, accentColor);
+    PlayerTextDrawShow(playerid, txtCorner2);
+    
     return txtBackground;
 }
 
-stock PlayerText:mS_CreateMPTextDraw(playerid, modelindex, Float:Xpos, Float:Ypos, Float:Xrot, Float:Yrot, Float:Zrot, Float:mZoom, Float:width, Float:height, bgcolor)
-{
-    new PlayerText:txtPlayerSprite = CreatePlayerTextDraw(playerid, Xpos, Ypos, ""); // it has to be set with SetText later
-    PlayerTextDrawFont(playerid, txtPlayerSprite, TEXT_DRAW_FONT_MODEL_PREVIEW);
-    PlayerTextDrawColour(playerid, txtPlayerSprite, 0xFFFFFFFF);
-    PlayerTextDrawBackgroundColour(playerid, txtPlayerSprite, bgcolor);
-    PlayerTextDrawTextSize(playerid, txtPlayerSprite, width, height); // Text size is the Width:Height
-    PlayerTextDrawSetPreviewModel(playerid, txtPlayerSprite, modelindex);
-    PlayerTextDrawSetPreviewRot(playerid,txtPlayerSprite, Xrot, Yrot, Zrot, mZoom);
-    PlayerTextDrawSetSelectable(playerid, txtPlayerSprite, true);
-    PlayerTextDrawShow(playerid,txtPlayerSprite);
-    return txtPlayerSprite;
-}
-
-stock mS_DestroyPlayerMPs(playerid)
-{
-	new x=0;
-	while(x != mS_SELECTION_ITEMS) {
-	    if(gSelectionItems[playerid][x] != PlayerText:INVALID_TEXT_DRAW) {
-			PlayerTextDrawDestroy(playerid, gSelectionItems[playerid][x]);
-			gSelectionItems[playerid][x] = PlayerText:INVALID_TEXT_DRAW;
-		}
-		x++;
-	}
-}
-
-stock mS_ShowPlayerMPs(playerid)
-{
-	new bgcolor = GetPVarInt(playerid, "mS_previewBGcolor");
-    new x=0;
-	new Float:BaseX = mS_DIALOG_BASE_X;
-	new Float:BaseY = mS_DIALOG_BASE_Y - (mS_SPRITE_DIM_Y * 0.33); // down a bit
-	new linetracker = 0;
-
-	new mS_listID = mS_GetPlayerCurrentListID(playerid);
-	if(mS_listID == mS_CUSTOM_LISTID)
-	{
-		new itemat = (GetPVarInt(playerid, "mS_list_page") * mS_SELECTION_ITEMS);
-		new Float:rotzoom[4];
-		rotzoom[0] = GetPVarFloat(playerid, "mS_custom_Xrot");
-		rotzoom[1] = GetPVarFloat(playerid, "mS_custom_Yrot");
-		rotzoom[2] = GetPVarFloat(playerid, "mS_custom_Zrot");
-		rotzoom[3] = GetPVarFloat(playerid, "mS_custom_Zoom");
-		new itemamount = mS_GetAmountOfListItemsEx(playerid);
-		// Destroy any previous ones created
-		mS_DestroyPlayerMPs(playerid);
-
-		while(x != mS_SELECTION_ITEMS && itemat < (itemamount)) {
-			if(linetracker == 0) {
-				BaseX = mS_DIALOG_BASE_X + 25.0; // in a bit from the box
-				BaseY += mS_SPRITE_DIM_Y + 1.0; // move on the Y for the next line
-			}
-			gSelectionItems[playerid][x] = mS_CreateMPTextDraw(playerid, gCustomList[playerid][itemat], BaseX, BaseY, rotzoom[0], rotzoom[1], rotzoom[2], rotzoom[3], mS_SPRITE_DIM_X, mS_SPRITE_DIM_Y, bgcolor);
-			gSelectionItemsTag[playerid][x] = gCustomList[playerid][itemat];
-			BaseX += mS_SPRITE_DIM_X + 1.0; // move on the X for the next sprite
-			linetracker++;
-			if(linetracker == mS_ITEMS_PER_LINE) linetracker = 0;
-			itemat++;
-			x++;
-		}
-	}
-	else
-	{
-		new itemat = (gLists[mS_listID][mS_LIST_START] + (GetPVarInt(playerid, "mS_list_page") * mS_SELECTION_ITEMS));
-
-		// Destroy any previous ones created
-		mS_DestroyPlayerMPs(playerid);
-
-		while(x != mS_SELECTION_ITEMS && itemat < (gLists[mS_listID][mS_LIST_END]+1)) {
-			if(linetracker == 0) {
-				BaseX = mS_DIALOG_BASE_X + 25.0; // in a bit from the box
-				BaseY += mS_SPRITE_DIM_Y + 1.0; // move on the Y for the next line
-			}
-			new rzID = gItemList[itemat][mS_ITEM_ROT_ZOOM_ID]; // avoid long line
-			if(rzID > -1) gSelectionItems[playerid][x] = mS_CreateMPTextDraw(playerid, gItemList[itemat][mS_ITEM_MODEL], BaseX, BaseY, gRotZoom[rzID][0], gRotZoom[rzID][1], gRotZoom[rzID][2], gRotZoom[rzID][3], mS_SPRITE_DIM_X, mS_SPRITE_DIM_Y, bgcolor);
-			else gSelectionItems[playerid][x] = mS_CreateMPTextDraw(playerid, gItemList[itemat][mS_ITEM_MODEL], BaseX, BaseY, 0.0, 0.0, 0.0, 1.0, mS_SPRITE_DIM_X, mS_SPRITE_DIM_Y, bgcolor);
-			gSelectionItemsTag[playerid][x] = gItemList[itemat][mS_ITEM_MODEL];
-			BaseX += mS_SPRITE_DIM_X + 1.0; // move on the X for the next sprite
-			linetracker++;
-			if(linetracker == mS_ITEMS_PER_LINE) linetracker = 0;
-			itemat++;
-			x++;
-		}
-	}
-}
-
-stock mS_UpdatePageTextDraw(playerid)
-{
-	new PageText[64+1];
-	new listID = mS_GetPlayerCurrentListID(playerid);
-	if(listID == mS_CUSTOM_LISTID)
-	{
-		format(PageText, 64, "%d/%d", GetPVarInt(playerid,"mS_list_page") + 1, mS_GetNumberOfPagesEx(playerid));
-		PlayerTextDrawSetString(playerid, gCurrentPageTextDrawId[playerid], PageText);
-	}
-	else
-	{
-		format(PageText, 64, "%d/%d", GetPVarInt(playerid,"mS_list_page") + 1, mS_GetNumberOfPages(listID));
-		PlayerTextDrawSetString(playerid, gCurrentPageTextDrawId[playerid], PageText);
-	}
-}
-
-stock ShowModelSelectionMenu(playerid, ListID, const header_text[], dialogBGcolor = 0x4A5A6BBB, previewBGcolor = 0x88888899 , tdSelectionColor = 0xFFFF00AA)
-{
-	if(!(0 <= ListID < mS_TOTAL_LISTS && gLists[ListID][mS_LIST_START] != gLists[ListID][mS_LIST_END])) return 0;
-	mS_DestroySelectionMenu(playerid);
-	SetPVarInt(playerid, "mS_list_page", 0);
-	SetPVarInt(playerid, "mS_list_id", ListID);
-	SetPVarInt(playerid, "mS_list_active", 1);
-	SetPVarInt(playerid, "mS_list_time", GetTickCount());
-
-    gBackgroundTextDrawId[playerid] = mS_CreatePlayerBGTextDraw(playerid, mS_DIALOG_BASE_X, mS_DIALOG_BASE_Y + 20.0, mS_DIALOG_WIDTH, mS_DIALOG_HEIGHT, dialogBGcolor);
-    gHeaderTextDrawId[playerid] = mS_CreatePlayerHeaderTextDraw(playerid, mS_DIALOG_BASE_X, mS_DIALOG_BASE_Y, header_text);
-    gCurrentPageTextDrawId[playerid] = mS_CreateCurrentPageTextDraw(playerid, mS_DIALOG_WIDTH - 30.0, mS_DIALOG_BASE_Y + 15.0);
-    gNextButtonTextDrawId[playerid] = mS_CreatePlayerDialogButton(playerid, mS_DIALOG_WIDTH - 30.0, mS_DIALOG_BASE_Y+mS_DIALOG_HEIGHT+100.0, 50.0, 16.0, mS_NEXT_TEXT);
-    gPrevButtonTextDrawId[playerid] = mS_CreatePlayerDialogButton(playerid, mS_DIALOG_WIDTH - 90.0, mS_DIALOG_BASE_Y+mS_DIALOG_HEIGHT+100.0, 50.0, 16.0, mS_PREV_TEXT);
-    gCancelButtonTextDrawId[playerid] = mS_CreatePlayerDialogButton(playerid, mS_DIALOG_WIDTH - 150.0, mS_DIALOG_BASE_Y+mS_DIALOG_HEIGHT+100.0, 50.0, 16.0, mS_CANCEL_TEXT);
-
-	SetPVarInt(playerid, "mS_previewBGcolor", previewBGcolor);
-    mS_ShowPlayerMPs(playerid);
-    mS_UpdatePageTextDraw(playerid);
-
-	SelectTextDraw(playerid, tdSelectionColor);
-	return 1;
-}
-
-stock ShowModelSelectionMenuEx(playerid, const items_array[], item_amount, const header_text[], extraid, Float:Xrot = 0.0, Float:Yrot = 0.0, Float:Zrot = 0.0, Float:mZoom = 1.0, dialogBGcolor = 0x4A5A6BBB, previewBGcolor = 0x88888899 , tdSelectionColor = 0xFFFF00AA)
-{
-	mS_DestroySelectionMenu(playerid);
-	if(item_amount > mS_CUSTOM_MAX_ITEMS)
-	{
-		item_amount = mS_CUSTOM_MAX_ITEMS;
-		print("-mSelection- WARNING: Too many items given to \"ShowModelSelectionMenuEx\", increase \"mS_CUSTOM_MAX_ITEMS\" to fix this");
-	}
-	if(item_amount > 0)
-	{
-		for(new i=0;i<item_amount;i++)
-		{
-			gCustomList[playerid][i] = items_array[i];
-		}
-		SetPVarInt(playerid, "mS_list_page", 0);
-		SetPVarInt(playerid, "mS_list_id", mS_CUSTOM_LISTID);
-		SetPVarInt(playerid, "mS_list_active", 1);
-		SetPVarInt(playerid, "mS_list_time", GetTickCount());
-
-		SetPVarInt(playerid, "mS_custom_item_amount", item_amount);
-		SetPVarFloat(playerid, "mS_custom_Xrot", Xrot);
-		SetPVarFloat(playerid, "mS_custom_Yrot", Yrot);
-		SetPVarFloat(playerid, "mS_custom_Zrot", Zrot);
-		SetPVarFloat(playerid, "mS_custom_Zoom", mZoom);
-		SetPVarInt(playerid, "mS_custom_extraid", extraid);
 
 
-		gBackgroundTextDrawId[playerid] = mS_CreatePlayerBGTextDraw(playerid, mS_DIALOG_BASE_X, mS_DIALOG_BASE_Y + 20.0, mS_DIALOG_WIDTH, mS_DIALOG_HEIGHT, dialogBGcolor);
-		gHeaderTextDrawId[playerid] = mS_CreatePlayerHeaderTextDraw(playerid, mS_DIALOG_BASE_X, mS_DIALOG_BASE_Y, header_text);
-		gCurrentPageTextDrawId[playerid] = mS_CreateCurrentPageTextDraw(playerid, mS_DIALOG_WIDTH - 30.0, mS_DIALOG_BASE_Y + 15.0);
-		gNextButtonTextDrawId[playerid] = mS_CreatePlayerDialogButton(playerid, mS_DIALOG_WIDTH - 30.0, mS_DIALOG_BASE_Y+mS_DIALOG_HEIGHT+100.0, 50.0, 16.0, mS_NEXT_TEXT);
-		gPrevButtonTextDrawId[playerid] = mS_CreatePlayerDialogButton(playerid, mS_DIALOG_WIDTH - 90.0, mS_DIALOG_BASE_Y+mS_DIALOG_HEIGHT+100.0, 50.0, 16.0, mS_PREV_TEXT);
-		gCancelButtonTextDrawId[playerid] = mS_CreatePlayerDialogButton(playerid, mS_DIALOG_WIDTH - 150.0, mS_DIALOG_BASE_Y+mS_DIALOG_HEIGHT+100.0, 50.0, 16.0, mS_CANCEL_TEXT);
 
-		SetPVarInt(playerid, "mS_previewBGcolor", previewBGcolor);
-		mS_ShowPlayerMPs(playerid);
-		mS_UpdatePageTextDraw(playerid);
 
-		SelectTextDraw(playerid, tdSelectionColor);
-		return 1;
-	}
-	return 0;
-}
+
+
+
+
+
 
 stock date( timestamp, _form=0 )
 {
@@ -11124,7 +10736,7 @@ stock SetPlayerSpawn(playerid)
 						}
 					}	
 						
-					for(new i = 0; i < MAX_PLAYERS; i++)
+					foreach(new i: Player)
 					{
 						if(HungerPlayerInfo[i][hgInEvent] == 1)
 						{
@@ -11202,7 +10814,7 @@ stock SetPlayerSpawn(playerid)
 				
 				new string[128];
 				format(string, sizeof(string), "Nguoi choi trong event: %d", hgPlayerCount);
-				for(new i = 0; i < MAX_PLAYERS; i++)
+				foreach(new i: Player)
 				{
 					PlayerTextDrawSetString(i, HungerPlayerInfo[i][hgPlayerText], string);
 				}
@@ -16844,6 +16456,9 @@ stock UnloadNGVehicles()
 
 stock GetPlayerVehicle(playerid, vehicleid)
 {
+    if(!IsValidPlayerID(playerid)) return -1;
+    if(!IsValidVehicleID(vehicleid)) return -1;
+    
     for(new v = 0; v < MAX_PLAYERVEHICLES; v++)
     {
         if(PlayerVehicleInfo[playerid][v][pvId] == vehicleid)
@@ -18374,12 +17989,6 @@ stock ConvertTime(cts, &ctm=-1,&cth=-1,&ctd=-1,&ctw=-1,&ctmo=-1,&cty=-1)
     return strii;
 }
 
-stock IsValidVehicleID(vehicleid)
-{
-   if(GetVehicleModel(vehicleid)) return 1;
-   return 0;
-}
-
 stock ExecuteNOPAction(playerid)
 {
 	new string[128];
@@ -18931,68 +18540,7 @@ stock CountCrates()
 	return count;
 }
 
-#if defined zombiemode
-stock SpawnZombie(playerid)
-{
-	new Float:maxdis, Float:dis, tpto;
-	maxdis=9999.9;
-	SetPlayerSkin(playerid, 134);
-	SetPlayerHealth(playerid, 200);
-	SetPlayerInterior(playerid, 0);
-	SetPlayerVirtualWorld(playerid, 0);
-	for(new x;x<sizeof(ZombieSpawns);x++)
-	{
-        dis = GetPointDistanceToPoint(ZombieSpawns[x][0], ZombieSpawns[x][1], ZombieSpawns[x][2], GetPVarFloat(playerid,"MedicX"), GetPVarFloat(playerid,"MedicY"), GetPVarFloat(playerid,"MedicZ"));
-        if((dis < maxdis) && (dis > 50.0))
-        {
-            tpto=x;
-            maxdis=dis;
-        }
-	}
-	SetPlayerPos(playerid, ZombieSpawns[tpto][0], ZombieSpawns[tpto][1], ZombieSpawns[tpto][2]);
-	SetPlayerFacingAngle(playerid, ZombieSpawns[tpto][3]);
-	ClearAnimations(playerid);
-	return 1;
-}
 
-stock MakeZombie(playerid)
-{
-    new Float:X, Float:Y, Float:Z, string[128];
-    GetPlayerPos(playerid, X, Y, Z);
-
-    if(IsPlayerConnected(GetPVarInt(playerid, "pZombieBiter")))
-	{
-		format(string, sizeof(string), "INSERT INTO zombiekills (id,num) VALUES (%d,1) ON DUPLICATE KEY UPDATE num = num + 1", GetPlayerSQLId(GetPVarInt(playerid, "pZombieBiter")));
-		mysql_function_query(MainPipeline, string, false, "OnQueryFinish", "ii", SENDDATA_THREAD, playerid);
-		DeletePVar(playerid, "pZombieBiter");
-	}
-
-	SendClientMessageEx(playerid, COLOR_RED, "Ban dang la Zombie, su dung /bite de lay nhiem sang nguoi khac!");
- 	SetPVarInt(playerid, "pIsZombie", 1);
-  	DeletePVar(playerid, "pZombieBit");
-   	SetPlayerToTeamColor(playerid);
-
-	SetPlayerHealth(playerid, 200);
-	SetPlayerSkin(playerid, 134);
-
-	ResetPlayerWeaponsEx(playerid);
-
- 	//SendAudioToRange(70, 100, X, Y, Z, 30); RESCRIPT NEW SOUND
-
- 	format(string, sizeof(string), "INSERT INTO `zombie` (`id`) VALUES ('%d')", GetPlayerSQLId(playerid));
-	mysql_function_query(MainPipeline, string, false, "OnQueryFinish", "ii", SENDDATA_THREAD, playerid);
-	return 1;
-}
-
-stock UnZombie(playerid)
-{
-	DeletePVar(playerid, "pIsZombie");
-  	DeletePVar(playerid, "pZombieBit");
-  	SetPlayerSkin(playerid, PlayerInfo[playerid][pModel]);
-   	SetPlayerToTeamColor(playerid);
-	return 1;
-}
-#endif
 
 stock MoveGate(playerid, gateid)
 {
@@ -19581,6 +19129,11 @@ stock TransferStorage(playerid, storageid, fromplayerid, fromstorageid, itemid, 
 					PlayerPlaySound(fromplayerid, 1052, 0.0, 0.0, 0.0);
 					format(string, sizeof(string), "* %s lay mot so %s tu %s, va dua no cho %s.", GetPlayerNameEx(fromplayerid), itemtype[itemid], storagetype[fromstorageid], GetPlayerNameEx(playerid));
 					ProxDetector(30.0, playerid, string, COLOR_PURPLE,COLOR_PURPLE,COLOR_PURPLE,COLOR_PURPLE,COLOR_PURPLE);
+
+					// Log money transfer to history system
+					new reason[128];
+					format(reason, sizeof(reason), "Chuyen tien cho %s", GetPlayerNameExt(playerid));
+					LogMoneyTransfer(fromplayerid, playerid, amount, MONEY_TYPE_GIVE, reason);
 
 					if(PlayerInfo[fromplayerid][pAdmin] >= 2)
 					{
@@ -24949,3 +24502,274 @@ stock bool:IsPlayerBeingRevived(playerid)
     if(!IsPlayerConnected(playerid)) return false;
     return PlayerBeingRevived[playerid];
 }
+
+// Deferred vehicle save to prevent disconnect timeout
+forward DeferredVehicleSave(playerid);
+public DeferredVehicleSave(playerid) {
+    if(!IsValidPlayerID(playerid)) return 0;
+    
+    new Float:pos[4];
+    new vehicleCount = 0;
+    
+    // Quick vehicle position update
+    for(new v = 0; v < MAX_PLAYERVEHICLES; v++) {
+        if(IsValidVehicleSlot(v) && PlayerVehicleInfo[playerid][v][pvId] != INVALID_PLAYER_VEHICLE_ID) {
+            new vehicleid = PlayerVehicleInfo[playerid][v][pvId];
+            if(IsValidVehicleID(vehicleid) && IsValidVehicle(vehicleid)) {
+                vehicleCount++;
+                GetVehiclePos(vehicleid, pos[0], pos[1], pos[2]);
+                GetVehicleZAngle(vehicleid, pos[3]);
+                
+                PlayerVehicleInfo[playerid][v][pvPosX] = pos[0];
+                PlayerVehicleInfo[playerid][v][pvPosY] = pos[1];
+                PlayerVehicleInfo[playerid][v][pvPosZ] = pos[2];
+                PlayerVehicleInfo[playerid][v][pvPosAngle] = pos[3];
+                PlayerVehicleInfo[playerid][v][pvVW] = GetVehicleVirtualWorld(vehicleid);
+                PlayerVehicleInfo[playerid][v][pvInt] = GetVehicleInterior(vehicleid);
+                PlayerVehicleInfo[playerid][v][pvFuel] = VehicleFuel[vehicleid];
+                
+                // Crash detection
+                new Float:diffX = pos[0] - PlayerVehicleInfo[playerid][v][pvPosX];
+                new Float:diffY = pos[1] - PlayerVehicleInfo[playerid][v][pvPosY];
+                if(diffX < 0.0) diffX = -diffX;
+                if(diffY < 0.0) diffY = -diffY;
+                
+                if(PlayerVehicleInfo[playerid][v][pvCrashFlag] == 0 && (diffX > 1.0 || diffY > 1.0)) {
+                    PlayerVehicleInfo[playerid][v][pvCrashFlag] = 1;
+                    PlayerVehicleInfo[playerid][v][pvCrashVW] = PlayerVehicleInfo[playerid][v][pvVW];
+                    PlayerVehicleInfo[playerid][v][pvCrashX] = pos[0];
+                    PlayerVehicleInfo[playerid][v][pvCrashY] = pos[1];
+                    PlayerVehicleInfo[playerid][v][pvCrashZ] = pos[2];
+                    PlayerVehicleInfo[playerid][v][pvCrashAngle] = pos[3];
+                }
+            }
+        }
+    }
+    
+    // Save vehicles if any exist
+    if(vehicleCount > 0) {
+        for(new v = 0; v < MAX_PLAYERVEHICLES; v++) {
+            if(IsValidVehicleSlot(v) && PlayerVehicleInfo[playerid][v][pvId] != INVALID_PLAYER_VEHICLE_ID) {
+                g_mysql_SaveVehicle(playerid, v);
+            }
+        }
+    }
+    
+    return 1;
+}
+
+forward DeferredPlayerNotifications(playerid);
+public DeferredPlayerNotifications(playerid) {
+    if(!IsValidPlayerID(playerid)) return 0;
+    
+    foreach(new i: Player) {
+        if(!IsPlayerConnected(i)) continue;
+        
+        if (GetPVarType(i, "hFind") && GetPVarInt(i, "hFind") == playerid) {
+            SendClientMessageEx(i, COLOR_GREY, "Khong ket noi duoc voi may chu, ban co the thu lai sau.");
+            DeletePVar(i, "hFind");
+            DisablePlayerCheckpoint(i);
+        }
+        if (GetPVarType(i, "Backup") && GetPVarInt(i, "Backup") == playerid) {
+            SendClientMessageEx(i, COLOR_GREY, "Nguoi goi backup da thoat ket noi may chu.");
+            DeletePVar(i, "Backup");
+        }
+        if(TaxiAccepted[i] == playerid) {
+            TaxiAccepted[i] = INVALID_PLAYER_ID;
+            GameTextForPlayer(i, "~w~Nguoi goi TAXI~n~~r~da thoat may chu", 5000, 1);
+            TaxiCallTime[i] = 0;
+            DisablePlayerCheckpoint(i);
+        }
+        if(EMSAccepted[i] == playerid) {
+            EMSAccepted[i] = INVALID_PLAYER_ID;
+            GameTextForPlayer(i, "~w~Nguoi goi EMS~n~~r~da thoat may chu", 5000, 1);
+            EMSCallTime[i] = 0;
+            DisablePlayerCheckpoint(i);
+        }
+        if(BusAccepted[i] == playerid) {
+            BusAccepted[i] = INVALID_PLAYER_ID;
+            GameTextForPlayer(i, "~w~Nguoi goi BUS~n~~r~da thoat may chu", 5000, 1);
+            BusCallTime[i] = 0;
+            DisablePlayerCheckpoint(i);
+        }
+        if(MedicAccepted[i] == playerid) {
+            TaxiAccepted[playerid] = INVALID_PLAYER_ID; 
+            BusAccepted[playerid] = INVALID_PLAYER_ID; 
+            MedicAccepted[playerid] = INVALID_PLAYER_ID;
+            GameTextForPlayer(i, "~w~Nguoi goi MEDIC~n~~r~da thoat may chu", 5000, 1);
+            MedicCallTime[i] = 0;
+            DisablePlayerCheckpoint(i);
+        }
+        if(OrderAssignedTo[i] == playerid) {
+           OrderAssignedTo[i] = INVALID_PLAYER_ID;
+        }
+    }
+    
+    return 1;
+}
+
+// Deferred spectator cleanup to prevent disconnect timeout
+forward DeferredSpectatorCleanup(playerid);
+public DeferredSpectatorCleanup(playerid) {
+    if(!IsValidPlayerID(playerid)) return 0;
+    
+    foreach(new i: Player) {
+        if(!IsPlayerConnected(i)) continue;
+        
+        if(Spectating[i] > 0 && Spectate[i] == playerid) {
+            SetPVarInt(i, "SpecOff", 1);
+            Spectating[i] = 0;
+            Spectate[i] = INVALID_PLAYER_ID;
+            GettingSpectated[playerid] = INVALID_PLAYER_ID;
+            TogglePlayerSpectating(i, false);
+            SendClientMessageEx(i, COLOR_WHITE, "Nguoi choi ban dang theo doi da thoat khoi may chu.");
+        }
+        if(GetPVarType(i, "_dCheck") && GetPVarInt(i, "_dCheck") == playerid) {
+            DeletePVar(i, "_dCheck");
+            SendClientMessageEx(i, COLOR_WHITE, "Nguoi choi ban dang kiem tra da thoat khoi may chu.");
+        }
+    }
+    
+    return 1;
+}
+
+// Deferred Hunger Games cleanup to prevent disconnect timeout
+forward DeferredHungerGamesCleanup(playerid);
+public DeferredHungerGamesCleanup(playerid) {
+    if(!IsValidPlayerID(playerid)) return 0;
+    
+    if(hgActive == 2) {
+        if(hgPlayerCount == 3) {
+            new szmessage[128];
+            format(szmessage, sizeof(szmessage), "** %s da dung thu ba trong su kien Hunger Games.", GetPlayerNameEx(playerid));
+            SendClientMessageToAll(COLOR_LIGHTBLUE, szmessage);
+                
+            SetPlayerHealth(playerid, HungerPlayerInfo[playerid][hgLastHealth]);
+            SetPlayerArmor(playerid, HungerPlayerInfo[playerid][hgLastArmour]);
+            SetPlayerVirtualWorld(playerid, HungerPlayerInfo[playerid][hgLastVW]);
+            SetPlayerInterior(playerid, HungerPlayerInfo[playerid][hgLastInt]);
+            SetPlayerPos(playerid, HungerPlayerInfo[playerid][hgLastPosition][0], HungerPlayerInfo[playerid][hgLastPosition][1], HungerPlayerInfo[playerid][hgLastPosition][2]);
+                    
+            ResetPlayerWeapons(playerid);
+                
+            HungerPlayerInfo[playerid][hgInEvent] = 0;
+            hgPlayerCount--;
+            HideHungerGamesTextdraw(playerid);
+            PlayerInfo[playerid][pRewardDrawChance] += 10;
+            SendClientMessageEx(playerid, COLOR_LIGHTBLUE, "** Ban da nhan 10 Draw Chances trong su kien Fall Into Fun.");
+            
+            for(new w = 0; w < 12; w++) {
+                PlayerInfo[playerid][pGuns][w] = HungerPlayerInfo[playerid][hgLastWeapon][w];
+                if(PlayerInfo[playerid][pGuns][w] > 0 && PlayerInfo[playerid][pAGuns][w] == 0) {
+                    GivePlayerValidWeapon(playerid, PlayerInfo[playerid][pGuns][w], 60000);
+                }
+            }
+        }
+        else if(hgPlayerCount == 2) {
+            new szmessage[128];
+            format(szmessage, sizeof(szmessage), "** %s da dung thu hai trong su kien Hunger Games.", GetPlayerNameEx(playerid));
+            SendClientMessageToAll(COLOR_LIGHTBLUE, szmessage);
+                
+            SetPlayerHealth(playerid, HungerPlayerInfo[playerid][hgLastHealth]);
+            SetPlayerArmor(playerid, HungerPlayerInfo[playerid][hgLastArmour]);
+            SetPlayerVirtualWorld(playerid, HungerPlayerInfo[playerid][hgLastVW]);
+            SetPlayerInterior(playerid, HungerPlayerInfo[playerid][hgLastInt]);
+            SetPlayerPos(playerid, HungerPlayerInfo[playerid][hgLastPosition][0], HungerPlayerInfo[playerid][hgLastPosition][1], HungerPlayerInfo[playerid][hgLastPosition][2]);
+                    
+            ResetPlayerWeapons(playerid);
+                
+            HungerPlayerInfo[playerid][hgInEvent] = 0;
+            hgPlayerCount--;
+            HideHungerGamesTextdraw(playerid);
+            PlayerInfo[playerid][pRewardDrawChance] += 25;
+            SendClientMessageEx(playerid, COLOR_LIGHTBLUE, "** Ban nhan duoc 25 Draw Chances trong su kien Fall Into Fun.");
+            
+            for(new w = 0; w < 12; w++) {
+                PlayerInfo[playerid][pGuns][w] = HungerPlayerInfo[playerid][hgLastWeapon][w];
+                if(PlayerInfo[playerid][pGuns][w] > 0 && PlayerInfo[playerid][pAGuns][w] == 0) {
+                    GivePlayerValidWeapon(playerid, PlayerInfo[playerid][pGuns][w], 60000);
+                }
+            }
+        }
+        else if(hgPlayerCount == 1) {
+            // Find the first winner
+            foreach(new i: Player) {
+                if(IsPlayerConnected(i) && gPlayerLogged{i} && HungerPlayerInfo[i][hgInEvent] == 1) {
+                    new szmessage[128];
+                    format(szmessage, sizeof(szmessage), "** %s da dung vi tri dau tien trong su kien Hunger Games.", GetPlayerNameEx(i));
+                    SendClientMessageToAll(COLOR_LIGHTBLUE, szmessage);
+                        
+                    SetPlayerHealth(i, HungerPlayerInfo[i][hgLastHealth]);
+                    SetPlayerArmor(i, HungerPlayerInfo[i][hgLastArmour]);
+                    SetPlayerVirtualWorld(i, HungerPlayerInfo[i][hgLastVW]);
+                    SetPlayerInterior(i, HungerPlayerInfo[i][hgLastInt]);
+                    SetPlayerPos(i, HungerPlayerInfo[i][hgLastPosition][0], HungerPlayerInfo[i][hgLastPosition][1], HungerPlayerInfo[i][hgLastPosition][2]);
+                            
+                    ResetPlayerWeapons(i);
+                        
+                    HungerPlayerInfo[i][hgInEvent] = 0;
+                    hgPlayerCount--;
+                    HideHungerGamesTextdraw(i);
+                    PlayerInfo[i][pRewardDrawChance] += 50;
+                    SendClientMessageEx(i, COLOR_LIGHTBLUE, "** Ban nhan duoc 50 Draw Chances trong su kien Fall Into Fun.");
+                    hgActive = 0;
+                    
+                    for(new w = 0; w < 12; w++) {
+                        PlayerInfo[i][pGuns][w] = HungerPlayerInfo[i][hgLastWeapon][w];
+                        if(PlayerInfo[i][pGuns][w] > 0 && PlayerInfo[i][pAGuns][w] == 0) {
+                            GivePlayerValidWeapon(i, PlayerInfo[i][pGuns][w], 60000);
+                        }
+                    }
+                    break; // Only process the first winner
+                }
+            }
+            
+            // Cleanup backpacks
+            for(new i = 0; i < 600; i++) {
+                if(IsValidDynamic3DTextLabel(HungerBackpackInfo[i][hgBackpack3DText])) {
+                    DestroyDynamic3DTextLabel(HungerBackpackInfo[i][hgBackpack3DText]);
+                }
+                if(IsValidDynamicPickup(HungerBackpackInfo[i][hgBackpackPickupId])) {
+                    DestroyDynamicPickup(HungerBackpackInfo[i][hgBackpackPickupId]);
+                }
+                
+                HungerBackpackInfo[i][hgActiveEx] = 0;
+            }
+        }
+        else if(hgPlayerCount > 3) {
+            SetPlayerHealth(playerid, HungerPlayerInfo[playerid][hgLastHealth]);
+            SetPlayerArmor(playerid, HungerPlayerInfo[playerid][hgLastArmour]);
+            SetPlayerVirtualWorld(playerid, HungerPlayerInfo[playerid][hgLastVW]);
+            SetPlayerInterior(playerid, HungerPlayerInfo[playerid][hgLastInt]);
+            SetPlayerPos(playerid, HungerPlayerInfo[playerid][hgLastPosition][0], HungerPlayerInfo[playerid][hgLastPosition][1], HungerPlayerInfo[playerid][hgLastPosition][2]);
+                    
+            ResetPlayerWeapons(playerid);
+                
+            SendClientMessageEx(playerid, COLOR_LIGHTBLUE, "* Ban da bi chet trong su kien Hunger Games, chuc may man trong su kien sau.");
+                
+            HungerPlayerInfo[playerid][hgInEvent] = 0;
+            hgPlayerCount--;
+                
+            HideHungerGamesTextdraw(playerid);
+            
+            for(new w = 0; w < 12; w++) {
+                PlayerInfo[playerid][pGuns][w] = HungerPlayerInfo[playerid][hgLastWeapon][w];
+                if(PlayerInfo[playerid][pGuns][w] > 0 && PlayerInfo[playerid][pAGuns][w] == 0) {
+                    GivePlayerValidWeapon(playerid, PlayerInfo[playerid][pGuns][w], 60000);
+                }
+            }
+        }
+        
+        // Update textdraw for all players
+        new string[128];
+        format(string, sizeof(string), "Nguoi choi trong su kien: %d", hgPlayerCount);
+        foreach(new i: Player) {
+            if(IsPlayerConnected(i) && gPlayerLogged{i}) {
+                PlayerTextDrawSetString(i, HungerPlayerInfo[i][hgPlayerText], string);
+            }
+        }
+    }
+    
+    return 1;
+}
+

@@ -458,7 +458,7 @@ UpdatePlayerPanelData(playerid)
     new totalOnline = 0;
     new playerList[MAX_PLAYERS];
     
-    for(new i = 0; i < MAX_PLAYERS; i++)
+    foreach(new i: Player)
     {
         if(IsPlayerConnected(i))
         {
@@ -564,7 +564,7 @@ GetPlayerFromPanelSlot(playerid, slot)
     new startIndex = PlayerPanelPage[playerid] * MAX_PANEL_PLAYERS;
     new targetIndex = startIndex + slot;
     
-    for(new i = 0; i < MAX_PLAYERS; i++)
+    foreach(new i: Player)
     {
         if(IsPlayerConnected(i))
         {
@@ -613,7 +613,7 @@ CMD:setstat(playerid, params[])
         return SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong duoc phep su dung lenh nay.");
 
     new list[2048];
-    for(new i = 0; i < MAX_PLAYERS; i++)
+    foreach(new i: Player)
     {
         if(IsPlayerConnected(i))
         {
@@ -1027,7 +1027,7 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         new targetid = -1;
         new currentIndex = 0;
         
-        for(new i = 0; i < MAX_PLAYERS; i++)
+        foreach(new i: Player)
         {
             if(IsPlayerConnected(i))
             {
@@ -1376,7 +1376,7 @@ hook OnPlayerDisconnect(playerid, reason)
     PlayerPanelPage[playerid] = 0;
     PlayerPanelSelectedPlayer[playerid] = INVALID_PLAYER_ID;
     
-    for(new i = 0; i < MAX_PLAYERS; i++)
+    foreach(new i: Player)
     {
         if(IsPlayerConnected(i) && PlayerPanelShowing[i])
         {
@@ -1397,7 +1397,7 @@ hook OnPlayerConnect(playerid)
         PlayerPanelTD[playerid][i] = PlayerText:INVALID_TEXT_DRAW;
     }
     
-    for(new i = 0; i < MAX_PLAYERS; i++)
+    foreach(new i: Player)
     {
         if(IsPlayerConnected(i) && PlayerPanelShowing[i])
         {

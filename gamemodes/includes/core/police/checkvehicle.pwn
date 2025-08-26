@@ -1,17 +1,14 @@
 #include <YSI\YSI_Coding\y_hooks>
 
-// Constants - Optimized with better naming
 #define MAX_VEHICLE_VIOLATIONS 10
 #define VEHICLE_CHECK_UPDATE_INTERVAL 500
 #define POLICE_CHECK_DISTANCE 8.0
 #define VEHICLE_CHECK_ANIMATION_TIME 200
 
-// Dialog IDs
 #define DIALOG_POLICE_VEHICLE_CHECK 9500
 #define DIALOG_POLICE_ISSUE_TICKET 9501
 #define DIALOG_POLICE_IMPOUND_CONFIRM 9502
 
-// Modern color scheme
 #define COLOR_PRIMARY 0x2196F3FF
 #define COLOR_SUCCESS 0x4CAF50FF
 #define COLOR_WARNING 0xFF9800FF
@@ -20,22 +17,18 @@
 #define COLOR_LIGHT 0x2A2A2AFF
 #define COLOR_TEXT 0xFFFFFFFF
 
-// Textdraw enum - Optimized structure
 enum E_VEHICLE_CHECK_TD {
-    // Main interface
     VehicleCheck_BG,
     VehicleCheck_Header,
     VehicleCheck_HeaderText,
     VehicleCheck_StatusBG,
     VehicleCheck_StatusText,
     
-    // Preview models
     VehicleCheck_PlayerPreviewBG,
     VehicleCheck_PlayerPreview,
     VehicleCheck_VehiclePreviewBG,
     VehicleCheck_VehiclePreview,
     
-    // Information panels
     VehicleCheck_VehicleInfoBG,
     VehicleCheck_VehicleInfoHeader,
     VehicleCheck_OwnerInfoBG,
@@ -43,7 +36,6 @@ enum E_VEHICLE_CHECK_TD {
     VehicleCheck_ViolationsBG,
     VehicleCheck_ViolationsHeader,
     
-    // Dynamic text elements
     VehicleCheck_VehicleModel,
     VehicleCheck_VehiclePlate,
     VehicleCheck_VehicleOwner,
@@ -56,7 +48,6 @@ enum E_VEHICLE_CHECK_TD {
     VehicleCheck_OwnerCrimes,
     VehicleCheck_ViolationsList,
     
-    // Action buttons
     VehicleCheck_IssueTicketBG,
     VehicleCheck_IssueTicketBtn,
     VehicleCheck_ImpoundBG,
@@ -65,7 +56,6 @@ enum E_VEHICLE_CHECK_TD {
     VehicleCheck_CloseBtn
 }
 
-// Violation types enum
 enum E_VIOLATION_TYPE {
     VIOLATION_NONE,
     VIOLATION_NO_LICENSE,
@@ -79,7 +69,6 @@ enum E_VIOLATION_TYPE {
     VIOLATION_DRUGS_FOUND
 }
 
-// Vehicle check data structure - Optimized
 enum E_VEHICLE_CHECK_DATA {
     bool:vcd_Active,
     vcd_VehicleID,
@@ -89,11 +78,9 @@ enum E_VEHICLE_CHECK_DATA {
     vcd_AnimationStep
 }
 
-// Global variables - Using modern Open.mp style
 static PlayerText:g_VehicleCheckTD[MAX_PLAYERS][E_VEHICLE_CHECK_TD];
 static g_VehicleCheckData[MAX_PLAYERS][E_VEHICLE_CHECK_DATA];
 
-// Violation data - Compressed arrays
 static const g_ViolationNames[E_VIOLATION_TYPE][32] = {
     "Khong co",
     "Khong co bang lai", 
@@ -110,8 +97,6 @@ static const g_ViolationNames[E_VIOLATION_TYPE][32] = {
 static const g_ViolationFines[E_VIOLATION_TYPE] = {
     0, 50000, 75000, 500000, 100000, 25000, 30000, 0, 200000, 150000
 };
-
-/*================== HELPER FUNCTIONS ==================*/
 
 static stock UpdateVehiclePreview(playerid, vehicleid, modelid) {
     PlayerTextDrawSetPreviewModel(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehiclePreview], modelid);
@@ -165,7 +150,6 @@ static stock ProcessTicketIssue(playerid) {
         GivePlayerMoney(targetid, -totalFine);
     }
     
-    // Log the ticket
     new logString[256];
     format(logString, sizeof(logString), 
         "[VEHICLE CHECK] %s issued ticket $%s to %s (Vehicle: %d)", 
@@ -188,7 +172,6 @@ static stock ProcessVehicleImpound(playerid) {
                 "Xe cua ban da bi tam giu boi canh sat vi vi pham giao thong!");
         }
         
-        // Log the impound
         new logString[256];
         format(logString, sizeof(logString), 
             "[VEHICLE CHECK] %s impounded vehicle %d owned by %s", 
@@ -202,9 +185,6 @@ static stock ProcessVehicleImpound(playerid) {
 }
 
 
-/*================== VEHICLE CHECK FUNCTIONS ==================*/
-
-// Modern textdraw creation with optimized functions
 static stock CreateVehicleCheckBackground(playerid) {
     g_VehicleCheckTD[playerid][VehicleCheck_BG] = CreatePlayerTextDraw(playerid, 50.0, 75.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_BG], 540.0, 380.0);
@@ -236,7 +216,6 @@ static stock CreateVehicleCheckHeader(playerid) {
 }
 
 static stock CreateVehicleCheckPreviews(playerid) {
-    // Player preview
     g_VehicleCheckTD[playerid][VehicleCheck_PlayerPreviewBG] = CreatePlayerTextDraw(playerid, 485.0, 135.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_PlayerPreviewBG], 90.0, 110.0);
     PlayerTextDrawAlignment(playerid, g_VehicleCheckTD[playerid][VehicleCheck_PlayerPreviewBG], 1);
@@ -253,7 +232,6 @@ static stock CreateVehicleCheckPreviews(playerid) {
     PlayerTextDrawSetPreviewModel(playerid, g_VehicleCheckTD[playerid][VehicleCheck_PlayerPreview], 0);
     PlayerTextDrawSetPreviewRot(playerid, g_VehicleCheckTD[playerid][VehicleCheck_PlayerPreview], -15.0, 0.0, -25.0, 1.0);
     
-    // Vehicle preview
     g_VehicleCheckTD[playerid][VehicleCheck_VehiclePreviewBG] = CreatePlayerTextDraw(playerid, 485.0, 255.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehiclePreviewBG], 90.0, 90.0);
     PlayerTextDrawAlignment(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehiclePreviewBG], 1);
@@ -274,7 +252,6 @@ static stock CreateVehicleCheckPreviews(playerid) {
 }
 
 static stock CreateVehicleCheckInfoPanels(playerid) {
-    // Vehicle info panel
     g_VehicleCheckTD[playerid][VehicleCheck_VehicleInfoBG] = CreatePlayerTextDraw(playerid, 70.0, 135.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleInfoBG], 200.0, 125.0);
     PlayerTextDrawAlignment(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleInfoBG], 1);
@@ -290,7 +267,6 @@ static stock CreateVehicleCheckInfoPanels(playerid) {
     PlayerTextDrawLetterSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleInfoHeader], 0.24, 1.1);
     PlayerTextDrawSetOutline(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleInfoHeader], 1);
     
-    // Owner info panel
     g_VehicleCheckTD[playerid][VehicleCheck_OwnerInfoBG] = CreatePlayerTextDraw(playerid, 280.0, 135.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerInfoBG], 200.0, 125.0);
     PlayerTextDrawAlignment(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerInfoBG], 1);
@@ -309,7 +285,6 @@ static stock CreateVehicleCheckInfoPanels(playerid) {
 }
 
 static stock CreateVehicleCheckTextElements(playerid) {
-    // Vehicle info text elements
     g_VehicleCheckTD[playerid][VehicleCheck_VehicleModel] = CreatePlayerTextDraw(playerid, 75.0, 160.0, "~w~Model: ~g~Unknown");
     PlayerTextDrawAlignment(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleModel], 1);
     PlayerTextDrawColor(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleModel], COLOR_TEXT);
@@ -346,7 +321,6 @@ static stock CreateVehicleCheckTextElements(playerid) {
     PlayerTextDrawFont(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleEngine], 1);
     PlayerTextDrawLetterSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleEngine], 0.20, 0.9);
     
-    // Owner info text elements
     g_VehicleCheckTD[playerid][VehicleCheck_OwnerLevel] = CreatePlayerTextDraw(playerid, 285.0, 160.0, "~w~Level: ~g~1");
     PlayerTextDrawAlignment(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerLevel], 1);
     PlayerTextDrawColor(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerLevel], COLOR_TEXT);
@@ -398,7 +372,6 @@ static stock CreateVehicleCheckViolationsPanel(playerid) {
 }
 
 static stock CreateVehicleCheckButtons(playerid) {
-    // Issue ticket button
     g_VehicleCheckTD[playerid][VehicleCheck_IssueTicketBG] = CreatePlayerTextDraw(playerid, 80.0, 365.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_IssueTicketBG], 120.0, 28.0);
     PlayerTextDrawAlignment(playerid, g_VehicleCheckTD[playerid][VehicleCheck_IssueTicketBG], 1);
@@ -416,7 +389,6 @@ static stock CreateVehicleCheckButtons(playerid) {
     PlayerTextDrawSetOutline(playerid, g_VehicleCheckTD[playerid][VehicleCheck_IssueTicketBtn], 1);
     PlayerTextDrawSetSelectable(playerid, g_VehicleCheckTD[playerid][VehicleCheck_IssueTicketBtn], 1);
     
-    // Impound button
     g_VehicleCheckTD[playerid][VehicleCheck_ImpoundBG] = CreatePlayerTextDraw(playerid, 210.0, 365.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_ImpoundBG], 120.0, 28.0);
     PlayerTextDrawAlignment(playerid, g_VehicleCheckTD[playerid][VehicleCheck_ImpoundBG], 1);
@@ -434,7 +406,6 @@ static stock CreateVehicleCheckButtons(playerid) {
     PlayerTextDrawSetOutline(playerid, g_VehicleCheckTD[playerid][VehicleCheck_ImpoundBtn], 1);
     PlayerTextDrawSetSelectable(playerid, g_VehicleCheckTD[playerid][VehicleCheck_ImpoundBtn], 1);
     
-    // Close button
     g_VehicleCheckTD[playerid][VehicleCheck_CloseBG] = CreatePlayerTextDraw(playerid, 340.0, 365.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, g_VehicleCheckTD[playerid][VehicleCheck_CloseBG], 120.0, 28.0);
     PlayerTextDrawAlignment(playerid, g_VehicleCheckTD[playerid][VehicleCheck_CloseBG], 1);
@@ -484,7 +455,6 @@ stock CreateVehicleCheckTextDraws(playerid)
     CreateVehicleCheckStatusBar(playerid);
 }
 
-// Optimized show/hide functions with animation support
 stock ShowVehicleCheckInterface(playerid) {
     if(g_VehicleCheckData[playerid][vcd_Active]) return 0;
     
@@ -516,7 +486,6 @@ stock HideVehicleCheckInterface(playerid) {
     return 1;
 }
 
-// Optimized vehicle info update function with caching
 stock UpdateVehicleCheckInfo(playerid, vehicleid) {
     if(!g_VehicleCheckData[playerid][vcd_Active]) return 0;
     
@@ -529,7 +498,6 @@ stock UpdateVehicleCheckInfo(playerid, vehicleid) {
     g_VehicleCheckData[playerid][vcd_VehicleID] = vehicleid;
     g_VehicleCheckData[playerid][vcd_TargetPlayer] = ownerid;
     
-    // Update vehicle info efficiently
     UpdateVehicleInfoDisplay(playerid, vehicleid, ownerid, slot);
     UpdateOwnerInfoDisplay(playerid, ownerid);
     CheckVehicleViolationsOptimized(playerid, vehicleid, ownerid, slot);
@@ -538,24 +506,19 @@ stock UpdateVehicleCheckInfo(playerid, vehicleid) {
     return 1;
 }
 
-// Optimized display update functions
 static stock UpdateVehicleInfoDisplay(playerid, vehicleid, ownerid, slot) {
     new modelid = GetVehicleModel(vehicleid);
     new string[128];
     
-    // Vehicle model
     format(string, sizeof(string), "~w~Model: ~g~%s (%d)", GetVehicleName(vehicleid), modelid);
     PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleModel], string);
     
-    // License plate
     format(string, sizeof(string), "~w~Bien so: ~g~%s", PlayerVehicleInfo[ownerid][slot][pvPlate]);
     PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehiclePlate], string);
     
-    // Owner name
     format(string, sizeof(string), "~w~Chu xe: ~g~%s", GetPlayerNameEx(ownerid));
     PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleOwner], string);
     
-    // Vehicle health with color coding
     new Float:health;
     GetVehicleHealth(vehicleid, health);
     new healthPercent = floatround((health / 1000.0) * 100.0);
@@ -570,7 +533,6 @@ static stock UpdateVehicleInfoDisplay(playerid, vehicleid, ownerid, slot) {
     format(string, sizeof(string), "~w~Tinh trang: %s%d%%", healthColor, healthPercent);
     PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleHealth], string);
     
-    // Fuel with color coding
     new fuelPercent = floatround((PlayerVehicleInfo[ownerid][slot][pvFuel] / 100.0) * 100.0);
     new fuelColor[8];
     
@@ -583,12 +545,10 @@ static stock UpdateVehicleInfoDisplay(playerid, vehicleid, ownerid, slot) {
     format(string, sizeof(string), "~w~Nhien lieu: %s%d%%", fuelColor, fuelPercent);
     PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleFuel], string);
     
-    // Engine upgrade
     new engineLevel = PlayerVehicleInfo[ownerid][slot][pvEngineUpgrade];
     format(string, sizeof(string), "~w~Dong co: ~g~Level %d", engineLevel);
     PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_VehicleEngine], string);
     
-    // Update vehicle preview
     UpdateVehiclePreview(playerid, vehicleid, modelid);
     return 1;
 }
@@ -597,16 +557,13 @@ static stock UpdateOwnerInfoDisplay(playerid, ownerid) {
     new string[128];
     
     if(IsPlayerConnected(ownerid)) {
-        // Player level
         format(string, sizeof(string), "~w~Level: ~g~%d", PlayerInfo[ownerid][pLevel]);
         PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerLevel], string);
         
-        // License status
         format(string, sizeof(string), "~w~Bang lai: %s", 
             PlayerInfo[ownerid][pCarLic] ? "~g~Co" : "~r~Khong");
         PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerLicenses], string);
         
-        // Wanted level
         if(PlayerInfo[ownerid][pWantedLevel] > 0) {
             format(string, sizeof(string), "~w~Truy na: ~r~Level %d", PlayerInfo[ownerid][pWantedLevel]);
         } else {
@@ -614,14 +571,11 @@ static stock UpdateOwnerInfoDisplay(playerid, ownerid) {
         }
         PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerWanted], string);
         
-        // Crime count
         format(string, sizeof(string), "~w~Toi pham: ~g~%d", PlayerInfo[ownerid][pCrimes]);
         PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerCrimes], string);
         
-        // Update player preview
         UpdateVehicleCheckPlayerPreview(playerid, ownerid);
     } else {
-        // Offline player
         PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerLevel], "~w~Level: ~r~Offline");
         PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerLicenses], "~w~Bang lai: ~r~Unknown");
         PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_OwnerWanted], "~w~Truy na: ~r~Unknown");
@@ -630,33 +584,27 @@ static stock UpdateOwnerInfoDisplay(playerid, ownerid) {
     return 1;
 }
 
-// Optimized violation checking with better performance
 stock CheckVehicleViolationsOptimized(playerid, vehicleid, ownerid, slot) {
     g_VehicleCheckData[playerid][vcd_ViolationCount] = 0;
     
-    // No license check
     if(IsPlayerConnected(ownerid) && !PlayerInfo[ownerid][pCarLic]) {
         AddViolation(playerid, VIOLATION_NO_LICENSE);
     }
     
-    // Damaged vehicle check
     new Float:health;
     GetVehicleHealth(vehicleid, health);
     if(health < 500.0) {
         AddViolation(playerid, VIOLATION_DAMAGED_VEHICLE);
     }
     
-    // Wanted owner check
     if(IsPlayerConnected(ownerid) && PlayerInfo[ownerid][pWantedLevel] > 0) {
         AddViolation(playerid, VIOLATION_WANTED_OWNER);
     }
     
-    // Illegal modifications check
     if(PlayerVehicleInfo[ownerid][slot][pvEngineUpgrade] >= 4) {
         AddViolation(playerid, VIOLATION_ILLEGAL_MODIFICATIONS);
     }
     
-    // Illegal weapons check
     for(new i = 0; i < 3; i++) {
         if(PlayerVehicleInfo[ownerid][slot][pvWeapons][i] > 0) {
             AddViolation(playerid, VIOLATION_ILLEGAL_WEAPONS);
@@ -693,7 +641,6 @@ stock UpdateViolationsDisplay(playerid) {
     PlayerTextDrawSetString(playerid, g_VehicleCheckTD[playerid][VehicleCheck_ViolationsList], violationText);
 }
 
-// Optimized vehicle search function
 stock GetNearestVehicleToPlayerOptimized(playerid, Float:range = 5.0) {
     new Float:x, Float:y, Float:z;
     GetPlayerPos(playerid, x, y, z);
@@ -701,7 +648,6 @@ stock GetNearestVehicleToPlayerOptimized(playerid, Float:range = 5.0) {
     new closestVehicle = INVALID_VEHICLE_ID;
     new Float:closestDistance = range;
     
-    // Use more efficient vehicle iteration
     foreach(new vehicleid : Vehicle) {
         new Float:vx, Float:vy, Float:vz;
         GetVehiclePos(vehicleid, vx, vy, vz);
@@ -719,7 +665,6 @@ stock GetNearestVehicleToPlayerOptimized(playerid, Float:range = 5.0) {
 /*================== HOOKS ==================*/
 
 hook OnPlayerConnect(playerid) {
-    // Initialize player data
     g_VehicleCheckData[playerid][vcd_Active] = false;
     g_VehicleCheckData[playerid][vcd_VehicleID] = INVALID_VEHICLE_ID;
     g_VehicleCheckData[playerid][vcd_TargetPlayer] = INVALID_PLAYER_ID;
@@ -756,7 +701,6 @@ hook OnPlayerClickTextDraw(playerid, Text:clickedid) {
 hook OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid) {
     if(!g_VehicleCheckData[playerid][vcd_Active]) return 1;
     
-    // Issue ticket button
     if(playertextid == g_VehicleCheckTD[playerid][VehicleCheck_IssueTicketBG] || 
        playertextid == g_VehicleCheckTD[playerid][VehicleCheck_IssueTicketBtn]) {
         
@@ -769,7 +713,6 @@ hook OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid) {
         return 1;
     }
     
-    // Impound button
     if(playertextid == g_VehicleCheckTD[playerid][VehicleCheck_ImpoundBG] || 
        playertextid == g_VehicleCheckTD[playerid][VehicleCheck_ImpoundBtn]) {
         
@@ -782,7 +725,6 @@ hook OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid) {
         return 1;
     }
     
-    // Close button
     if(playertextid == g_VehicleCheckTD[playerid][VehicleCheck_CloseBG] || 
        playertextid == g_VehicleCheckTD[playerid][VehicleCheck_CloseBtn]) {
         
@@ -792,8 +734,6 @@ hook OnPlayerClickPlayerTextDraw(playerid, PlayerText:playertextid) {
     
     return 1;
 }
-
-/*================== COMMANDS ==================*/
 
 CMD:checkxe(playerid, params[]) {
     if(!IsACop(playerid)) {

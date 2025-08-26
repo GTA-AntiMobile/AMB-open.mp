@@ -5,96 +5,117 @@
 #endif
 #define _INC_HITMARKER
 
-#define MAX_HIT_MARKERS         5
-#define HIT_MARKER_DURATION     3000
-#define HIT_MARKER_FADE_TIME    2500
-#define HIT_MARKER_UPDATE_RATE  200
+#define MAX_HIT_MARKERS         8
+#define HIT_MARKER_DURATION     2500
+#define HIT_MARKER_FADE_TIME    2000
+#define HIT_MARKER_UPDATE_RATE  100
+#define HIT_MARKER_SPACING      16.0
 
-#define HIT_TYPE_DAMAGE         0
-#define HIT_TYPE_CRITICAL       1
-#define HIT_TYPE_HEAL           2
-#define HIT_TYPE_ARMOR          3
-#define HIT_TYPE_ATTACKER_DAMAGE    10
-#define HIT_TYPE_ATTACKER_CRITICAL  11
-#define HIT_TYPE_ATTACKER_HEAL      12
-#define HIT_TYPE_ATTACKER_ARMOR     13
+enum E_HIT_TYPE
+{
+    HIT_TYPE_DAMAGE = 0,
+    HIT_TYPE_CRITICAL,
+    HIT_TYPE_HEAL,
+    HIT_TYPE_ARMOR,
+    HIT_TYPE_ATTACKER_DAMAGE = 10,
+    HIT_TYPE_ATTACKER_CRITICAL,
+    HIT_TYPE_ATTACKER_HEAL,
+    HIT_TYPE_ATTACKER_ARMOR
+};
 
 enum E_HIT_MARKER_DATA
 {
     bool:hm_Active,
     Float:hm_Damage,
     hm_Type,
-    hm_Timer,
     hm_StartTime,
-    Float:hm_StartX,
-    Float:hm_StartY,
-    Float:hm_CurrentX,
-    Float:hm_CurrentY,
-    Float:hm_VelocityX,
-    Float:hm_VelocityY,
-    PlayerText:hm_TextDraw
+    Float:hm_X,
+    Float:hm_Y,
+    PlayerText:hm_TextDraw,
+    hm_Alpha
 };
 
 static HitMarkerData[MAX_PLAYERS][MAX_HIT_MARKERS][E_HIT_MARKER_DATA];
 static PlayerHitMarkerCount[MAX_PLAYERS];
 static PlayerHitMarkerTimer[MAX_PLAYERS];
+static bool:HitMarkerSystemActive[MAX_PLAYERS];
+
+static const BodyPartNames[][] = {
+    "Than",  
+    "Mong", 
+    "Tay trai", 
+    "Tay phai", 
+    "Chan trai", 
+    "Chan phai", 
+    "Dau"
+};
+
+
 
 stock GetBodyPartName(bodypart, bodyname[], len)
 {
-    switch(bodypart)
+    if(bodypart >= 0 && bodypart < sizeof(BodyPartNames))
     {
-        case 3: format(bodyname, len, "Than");
-        case 4: format(bodyname, len, "Mong");
-        case 5: format(bodyname, len, "Tay trai");
-        case 6: format(bodyname, len, "Tay phai");
-        case 7: format(bodyname, len, "Chan trai");
-        case 8: format(bodyname, len, "Chan phai");
-        case 9: format(bodyname, len, "Dau");
-        default: format(bodyname, len, "Than");
+        strcpy(bodyname, BodyPartNames[bodypart], len);
+    }
+    else
+    {
+        strcpy(bodyname, "Than", len);
     }
     return 1;
 }
 
 stock CreateHitMarkerTextDraw(playerid, slot, Float:damage, type, const shootername[] = "", bodypart = 3, weaponid = 0)
 {
-    #pragma unused type
-    new string[128];
+    new string[256];
     new bodyname[16];
     new weaponname[32];
     
     GetBodyPartName(bodypart, bodyname, sizeof(bodyname));
     GetWeaponName(weaponid, weaponname, sizeof(weaponname));
     
+    new colorCode[12], iconCode[8];
+    if(type >= HIT_TYPE_ATTACKER_DAMAGE)
+    {
+        strcpy(colorCode, "~y~", sizeof(colorCode));
+        strcpy(iconCode, "⚔", sizeof(iconCode));
+    }
+    else
+    {
+        strcpy(colorCode, "~r~", sizeof(colorCode));
+        strcpy(iconCode, "💥", sizeof(iconCode));
+    }
+    
     if(strlen(shootername) > 0)
     {
         if(damage >= 100.0)
-            format(string, sizeof(string), "~r~-%.0f ~w~(%s) ~y~%s ~g~%s", damage, shootername, bodyname, weaponname);
-        else if(damage >= 10.0)
-            format(string, sizeof(string), "~r~-%.1f ~w~(%s) ~y~%s ~g~%s", damage, shootername, bodyname, weaponname);
+            format(string, sizeof(string), "%s%s ~w~[~b~%.0f~w~] ~y~%s ~g~%s", iconCode, colorCode, damage, bodyname, weaponname);
         else
-            format(string, sizeof(string), "~r~-%.1f ~w~(%s) ~y~%s ~g~%s", damage, shootername, bodyname, weaponname);
+            format(string, sizeof(string), "%s%s ~w~[~b~%.1f~w~] ~y~%s ~g~%s", iconCode, colorCode, damage, bodyname, weaponname);
     }
     else
     {
         if(damage >= 100.0)
-            format(string, sizeof(string), "~r~-%.0f ~y~%s ~g~%s", damage, bodyname, weaponname);
-        else if(damage >= 10.0)
-            format(string, sizeof(string), "~r~-%.1f ~y~%s ~g~%s", damage, bodyname, weaponname);
+            format(string, sizeof(string), "%s%s ~w~[~b~%.0f~w~] ~y~%s", iconCode, colorCode, damage, bodyname);
         else
-            format(string, sizeof(string), "~r~-%.1f ~y~%s ~g~%s", damage, bodyname, weaponname);
+            format(string, sizeof(string), "%s%s ~w~[~b~%.1f~w~] ~y~%s", iconCode, colorCode, damage, bodyname);
     }
     
     HitMarkerData[playerid][slot][hm_TextDraw] = CreatePlayerTextDraw(playerid, 
-        HitMarkerData[playerid][slot][hm_CurrentX],
-        HitMarkerData[playerid][slot][hm_CurrentY],
+        HitMarkerData[playerid][slot][hm_X],
+        HitMarkerData[playerid][slot][hm_Y],
         string);
     
-    PlayerTextDrawLetterSize(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0.220, 1.000);
+    PlayerTextDrawLetterSize(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0.250, 1.100);
     PlayerTextDrawColor(playerid, HitMarkerData[playerid][slot][hm_TextDraw], -1);
-    PlayerTextDrawSetShadow(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 1);
-    PlayerTextDrawSetOutline(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 1);
+    PlayerTextDrawSetShadow(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 2);
+    PlayerTextDrawSetOutline(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 2);
+    PlayerTextDrawBackgroundColor(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0x00000088);
     PlayerTextDrawAlignment(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 2);
     PlayerTextDrawFont(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 1);
+    PlayerTextDrawUseBox(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 1);
+    PlayerTextDrawBoxColor(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0x00000066);
+    PlayerTextDrawTextSize(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0.0, 200.0);
     
     PlayerTextDrawShow(playerid, HitMarkerData[playerid][slot][hm_TextDraw]);
     
@@ -114,6 +135,19 @@ stock UpdateHitMarker(playerid, slot)
         return 0;
     }
     
+    if(elapsed >= HIT_MARKER_FADE_TIME)
+    {
+        new alpha = 255 - ((elapsed - HIT_MARKER_FADE_TIME) * 255 / (HIT_MARKER_DURATION - HIT_MARKER_FADE_TIME));
+        if(alpha < 0) alpha = 0;
+        
+        if(HitMarkerData[playerid][slot][hm_Alpha] != alpha)
+        {
+            HitMarkerData[playerid][slot][hm_Alpha] = alpha;
+            PlayerTextDrawColor(playerid, HitMarkerData[playerid][slot][hm_TextDraw], (alpha << 24) | 0xFFFFFF);
+            PlayerTextDrawShow(playerid, HitMarkerData[playerid][slot][hm_TextDraw]);
+        }
+    }
+    
     return 1;
 }
 
@@ -128,22 +162,13 @@ stock DestroyHitMarker(playerid, slot)
         HitMarkerData[playerid][slot][hm_TextDraw] = PlayerText:INVALID_TEXT_DRAW;
     }
     
-    if(HitMarkerData[playerid][slot][hm_Timer] != -1)
-    {
-        KillTimer(HitMarkerData[playerid][slot][hm_Timer]);
-        HitMarkerData[playerid][slot][hm_Timer] = -1;
-    }
-    
     HitMarkerData[playerid][slot][hm_Active] = false;
     HitMarkerData[playerid][slot][hm_Damage] = 0.0;
     HitMarkerData[playerid][slot][hm_Type] = 0;
     HitMarkerData[playerid][slot][hm_StartTime] = 0;
-    HitMarkerData[playerid][slot][hm_StartX] = 0.0;
-    HitMarkerData[playerid][slot][hm_StartY] = 0.0;
-    HitMarkerData[playerid][slot][hm_CurrentX] = 0.0;
-    HitMarkerData[playerid][slot][hm_CurrentY] = 0.0;
-    HitMarkerData[playerid][slot][hm_VelocityX] = 0.0;
-    HitMarkerData[playerid][slot][hm_VelocityY] = 0.0;
+    HitMarkerData[playerid][slot][hm_X] = 0.0;
+    HitMarkerData[playerid][slot][hm_Y] = 0.0;
+    HitMarkerData[playerid][slot][hm_Alpha] = 255;
     
     PlayerHitMarkerCount[playerid]--;
     if(PlayerHitMarkerCount[playerid] < 0)
@@ -178,67 +203,61 @@ stock GetAvailableHitMarkerSlot(playerid)
 
 stock CreateHitMarker(playerid, Float:damage, type = HIT_TYPE_DAMAGE, const shootername[] = "", bodypart = 3, weaponid = 0)
 {
-    if(!IsPlayerConnected(playerid))
+    if(!IsPlayerConnected(playerid) || !HitMarkerSystemActive[playerid])
         return 0;
     
     new slot = GetAvailableHitMarkerSlot(playerid);
     
     new Float:baseX = 500.0;
     new Float:baseY = 140.0;
-    new Float:offsetY = slot * 14.0; // Giảm khoảng cách giữa các hitmarker
+    new Float:offsetY = slot * HIT_MARKER_SPACING;
     
     HitMarkerData[playerid][slot][hm_Active] = true;
     HitMarkerData[playerid][slot][hm_Damage] = damage;
     HitMarkerData[playerid][slot][hm_Type] = type;
     HitMarkerData[playerid][slot][hm_StartTime] = GetTickCount();
-    HitMarkerData[playerid][slot][hm_StartX] = baseX;
-    HitMarkerData[playerid][slot][hm_StartY] = baseY + offsetY;
-    HitMarkerData[playerid][slot][hm_CurrentX] = baseX;
-    HitMarkerData[playerid][slot][hm_CurrentY] = baseY + offsetY;
-    
-    HitMarkerData[playerid][slot][hm_VelocityX] = 0.0;
-    HitMarkerData[playerid][slot][hm_VelocityY] = 0.0;
+    HitMarkerData[playerid][slot][hm_X] = baseX;
+    HitMarkerData[playerid][slot][hm_Y] = baseY + offsetY;
+    HitMarkerData[playerid][slot][hm_Alpha] = 255;
     
     CreateHitMarkerTextDraw(playerid, slot, damage, type, shootername, bodypart, weaponid);
     
     PlayerHitMarkerCount[playerid]++;
+    StartHitMarkerTimer(playerid);
     
     return 1;
 }
 
 stock CreateAttackerHitMarker(playerid, Float:damage, const targetname[], bodypart = 3, weaponid = 0)
 {
-    if(!IsPlayerConnected(playerid))
+    if(!IsPlayerConnected(playerid) || !HitMarkerSystemActive[playerid])
         return 0;
     
     new slot = GetAvailableHitMarkerSlot(playerid);
     
     new Float:baseX = 140.0;
     new Float:baseY = 140.0;
-    new Float:offsetY = slot * 14.0; // Giảm khoảng cách giữa các hitmarker
+    new Float:offsetY = slot * HIT_MARKER_SPACING;
     
     HitMarkerData[playerid][slot][hm_Active] = true;
     HitMarkerData[playerid][slot][hm_Damage] = damage;
-    HitMarkerData[playerid][slot][hm_Type] = HIT_TYPE_DAMAGE;
+    HitMarkerData[playerid][slot][hm_Type] = HIT_TYPE_ATTACKER_DAMAGE;
     HitMarkerData[playerid][slot][hm_StartTime] = GetTickCount();
-    HitMarkerData[playerid][slot][hm_StartX] = baseX;
-    HitMarkerData[playerid][slot][hm_StartY] = baseY + offsetY;
-    HitMarkerData[playerid][slot][hm_CurrentX] = baseX;
-    HitMarkerData[playerid][slot][hm_CurrentY] = baseY + offsetY;
-    
-    HitMarkerData[playerid][slot][hm_VelocityX] = 0.0;
-    HitMarkerData[playerid][slot][hm_VelocityY] = 0.0;
+    HitMarkerData[playerid][slot][hm_X] = baseX;
+    HitMarkerData[playerid][slot][hm_Y] = baseY + offsetY;
+    HitMarkerData[playerid][slot][hm_Alpha] = 255;
     
     CreateAttackerHitMarkerTextDraw(playerid, slot, damage, targetname, bodypart, weaponid);
     
     PlayerHitMarkerCount[playerid]++;
+    StartHitMarkerTimer(playerid);
     
     return 1;
 }
 
 stock CreateAttackerHitMarkerTextDraw(playerid, slot, Float:damage, const targetname[], bodypart = 3, weaponid = 0)
 {
-    new string[128];
+    new string[144];
     new bodyname[16];
     new weaponname[32];
     
@@ -249,8 +268,6 @@ stock CreateAttackerHitMarkerTextDraw(playerid, slot, Float:damage, const target
     {
         if(damage >= 100.0)
             format(string, sizeof(string), "~y~+%.0f ~w~(%s) ~g~%s ~b~%s", damage, targetname, bodyname, weaponname);
-        else if(damage >= 10.0)
-            format(string, sizeof(string), "~y~+%.1f ~w~(%s) ~g~%s ~b~%s", damage, targetname, bodyname, weaponname);
         else
             format(string, sizeof(string), "~y~+%.1f ~w~(%s) ~g~%s ~b~%s", damage, targetname, bodyname, weaponname);
     }
@@ -258,15 +275,13 @@ stock CreateAttackerHitMarkerTextDraw(playerid, slot, Float:damage, const target
     {
         if(damage >= 100.0)
             format(string, sizeof(string), "~y~+%.0f ~g~%s ~b~%s", damage, bodyname, weaponname);
-        else if(damage >= 10.0)
-            format(string, sizeof(string), "~y~+%.1f ~g~%s ~b~%s", damage, bodyname, weaponname);
         else
             format(string, sizeof(string), "~y~+%.1f ~g~%s ~b~%s", damage, bodyname, weaponname);
     }
     
     HitMarkerData[playerid][slot][hm_TextDraw] = CreatePlayerTextDraw(playerid, 
-        HitMarkerData[playerid][slot][hm_CurrentX], 
-        HitMarkerData[playerid][slot][hm_CurrentY], 
+        HitMarkerData[playerid][slot][hm_X], 
+        HitMarkerData[playerid][slot][hm_Y], 
         string);
     
     PlayerTextDrawLetterSize(playerid, HitMarkerData[playerid][slot][hm_TextDraw], 0.200, 0.950);
@@ -284,7 +299,7 @@ stock CreateAttackerHitMarkerTextDraw(playerid, slot, Float:damage, const target
 forward UpdatePlayerHitMarkers(playerid);
 public UpdatePlayerHitMarkers(playerid)
 {
-    if(!IsPlayerConnected(playerid))
+    if(!IsPlayerConnected(playerid) || !HitMarkerSystemActive[playerid])
     {
         if(PlayerHitMarkerTimer[playerid] != -1)
         {
@@ -294,15 +309,16 @@ public UpdatePlayerHitMarkers(playerid)
         return 0;
     }
     
-    static activeMarkers;
-    activeMarkers = 0;
+    new activeMarkers = 0;
     
     for(new i = 0; i < MAX_HIT_MARKERS; i++)
     {
         if(HitMarkerData[playerid][i][hm_Active])
         {
-            UpdateHitMarker(playerid, i);
-            activeMarkers++;
+            if(UpdateHitMarker(playerid, i))
+            {
+                activeMarkers++;
+            }
         }
     }
     
@@ -319,12 +335,13 @@ stock InitializeHitMarkerSystem(playerid)
 {
     PlayerHitMarkerCount[playerid] = 0;
     PlayerHitMarkerTimer[playerid] = -1;
+    HitMarkerSystemActive[playerid] = true;
     
     for(new i = 0; i < MAX_HIT_MARKERS; i++)
     {
         HitMarkerData[playerid][i][hm_Active] = false;
         HitMarkerData[playerid][i][hm_TextDraw] = PlayerText:INVALID_TEXT_DRAW;
-        HitMarkerData[playerid][i][hm_Timer] = -1;
+        HitMarkerData[playerid][i][hm_Alpha] = 255;
     }
     
     return 1;
@@ -347,17 +364,38 @@ stock CleanupHitMarkerSystem(playerid)
     }
     
     PlayerHitMarkerCount[playerid] = 0;
+    HitMarkerSystemActive[playerid] = false;
     
     return 1;
 }
 
 stock StartHitMarkerTimer(playerid)
 {
-    if(PlayerHitMarkerTimer[playerid] == -1)
+    if(PlayerHitMarkerTimer[playerid] == -1 && HitMarkerSystemActive[playerid])
     {
         PlayerHitMarkerTimer[playerid] = SetTimerEx("UpdatePlayerHitMarkers", HIT_MARKER_UPDATE_RATE, true, "i", playerid);
     }
     return 1;
+}
+
+stock ToggleHitMarkerSystem(playerid, bool:toggle)
+{
+    if(!IsPlayerConnected(playerid))
+        return 0;
+    
+    HitMarkerSystemActive[playerid] = toggle;
+    
+    if(!toggle)
+    {
+        CleanupHitMarkerSystem(playerid);
+    }
+    
+    return 1;
+}
+
+stock GetHitMarkerCount(playerid)
+{
+    return PlayerHitMarkerCount[playerid];
 }
 
 hook OnPlayerConnect(playerid)
@@ -377,11 +415,13 @@ hook OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
     if(!IsPlayerConnected(playerid) || !IsPlayerConnected(issuerid) || issuerid == INVALID_PLAYER_ID)
         return 1;
     
-    new shootername[MAX_PLAYER_NAME];
-    GetPlayerName(issuerid, shootername, sizeof(shootername));
-    
-    CreateHitMarker(playerid, amount, HIT_TYPE_DAMAGE, shootername, bodypart, weaponid);
-    StartHitMarkerTimer(playerid);
+    if(amount > 0.0)
+    {
+        new shootername[MAX_PLAYER_NAME];
+        GetPlayerName(issuerid, shootername, sizeof(shootername));
+        
+        CreateHitMarker(playerid, amount, HIT_TYPE_DAMAGE, shootername, bodypart, weaponid);
+    }
     
     return 1;
 }
@@ -391,11 +431,13 @@ hook OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
     if(!IsPlayerConnected(playerid) || !IsPlayerConnected(damagedid))
         return 1;
     
-    new targetname[MAX_PLAYER_NAME];
-    GetPlayerName(damagedid, targetname, sizeof(targetname));
-    
-    CreateAttackerHitMarker(playerid, amount, targetname, bodypart, weaponid);
-    StartHitMarkerTimer(playerid);
+    if(amount > 0.0)
+    {
+        new targetname[MAX_PLAYER_NAME];
+        GetPlayerName(damagedid, targetname, sizeof(targetname));
+        
+        CreateAttackerHitMarker(playerid, amount, targetname, bodypart, weaponid);
+    }
     
     return 1;
 }

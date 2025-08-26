@@ -89,6 +89,8 @@ CMD:cv(playerid, params[])
     return 1;
 }
 
+
+
 CMD:listcv(playerid, params[])
 {
     if(PlayerInfo[playerid][pAdmin] < 2) {
@@ -113,6 +115,99 @@ CMD:reloadcv(playerid, params[])
     SendClientMessage(playerid, 0xFFD700FF, "Models se duoc reload khi restart server");
     
     printf("[CustomVeh] %s requested CV info", GetPlayerNameEx(playerid));
+
+    return 1;
+}
+
+CMD:dcv(playerid, params[])
+{
+    if(PlayerInfo[playerid][pAdmin] < 2) {
+        return SendClientMessageEx(playerid, COLOR_GRAD1, "Ban khong duoc phep su dung lenh nay.");
+    }
+
+    new target_modelid;
+    if(sscanf(params, "D(-1)", target_modelid)) {
+        SendClientMessage(playerid, 0x4A90E2FF, "SU DUNG: /dcv [model ID]");
+        SendClientMessage(playerid, 0xFFD700FF, "VD: /dcv 30002 | /dcv (de xoa xe custom gan nhat)");
+        SendClientMessage(playerid, 0x4CAF50FF, "Chi xoa xe Custom (30001-40000)");
+        return 1;
+    }
+
+    new vehicleid = INVALID_VEHICLE_ID;
+    
+    if(target_modelid == -1) {
+        vehicleid = GetPlayerVehicleID(playerid);
+        new Float:distance = 999.0;
+        
+        if(vehicleid == INVALID_VEHICLE_ID) {
+            new Float:player_x, Float:player_y, Float:player_z;
+            GetPlayerPos(playerid, player_x, player_y, player_z);
+            
+            for(new i = 1; i < MAX_VEHICLES; i++) {
+                if(IsValidVehicle(i)) {
+                    new modelid = GetVehicleModel(i);
+                    if(IsValidCustomVehicle(modelid)) {
+                        new Float:veh_x, Float:veh_y, Float:veh_z;
+                        GetVehiclePos(i, veh_x, veh_y, veh_z);
+                        
+                        new Float:current_distance = GetPlayerDistanceFromPoint(playerid, veh_x, veh_y, veh_z);
+                        if(current_distance < distance) {
+                            distance = current_distance;
+                            vehicleid = i;
+                        }
+                    }
+                }
+            }
+            
+            if(vehicleid != INVALID_VEHICLE_ID && distance > 10.0) {
+                SendClientMessage(playerid, 0xFF6B6BFF, "Khong tim thay xe custom nao gan ban!");
+                return 1;
+            }
+        }
+    } else {
+        if(!IsValidCustomVehicle(target_modelid)) {
+            SendClientMessage(playerid, 0xFF6B6BFF, "Model ID khong hop le! Chi co the xoa xe Custom (30001-40000)!");
+            return 1;
+        }
+        
+        new Float:player_x, Float:player_y, Float:player_z;
+        GetPlayerPos(playerid, player_x, player_y, player_z);
+        new Float:distance = 999.0;
+        
+        for(new i = 1; i < MAX_VEHICLES; i++) {
+            if(IsValidVehicle(i)) {
+                new modelid = GetVehicleModel(i);
+                if(modelid == target_modelid) {
+                    new Float:veh_x, Float:veh_y, Float:veh_z;
+                    GetVehiclePos(i, veh_x, veh_y, veh_z);
+                    
+                    new Float:current_distance = GetPlayerDistanceFromPoint(playerid, veh_x, veh_y, veh_z);
+                    if(current_distance < distance) {
+                        distance = current_distance;
+                        vehicleid = i;
+                    }
+                }
+            }
+        }
+        
+        if(vehicleid == INVALID_VEHICLE_ID) {
+            SendClientMessage(playerid, 0xFF6B6BFF, "Khong tim thay xe co Model ID %d!", target_modelid);
+            return 1;
+        }
+    }
+    
+    if(vehicleid != INVALID_VEHICLE_ID) {
+        new modelid = GetVehicleModel(vehicleid);
+        DestroyVehicle(vehicleid);
+        
+        new string[128];
+        format(string, sizeof(string), "Da xoa xe Custom (Model: %d, Vehicle ID: %d)", modelid, vehicleid);
+        SendClientMessage(playerid, 0x4CAF50FF, string);
+        
+        printf("[CustomVeh] %s deleted custom vehicle (Model: %d, Vehicle ID: %d)", GetPlayerNameEx(playerid), modelid, vehicleid);
+    } else {
+        SendClientMessage(playerid, 0xFF6B6BFF, "Khong the xoa xe!");
+    }
 
     return 1;
 }

@@ -6156,11 +6156,33 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	    if(PlayerInfo[playerid][pAdmin] < 4) { return SendClientMessage(playerid, COLOR_GRAD2, "Ban khong duoc uy quyen");  }
 		new giveplayerid = GetPVarInt(playerid, "vehcheck_giveplayerid");
 		if(!IsPlayerConnected(giveplayerid)) { return SendClientMessage(playerid, COLOR_GRAD2, "Nguoi nay da mat ket noi"); }
-		new	iVehicleID = PlayerVehicleInfo[giveplayerid][listitem][pvId];
-		new model;
-		model = PlayerVehicleInfo[giveplayerid][listitem][pvModelId];
-		PlayerVehicleInfo[giveplayerid][listitem][pvId] = 0;
-        PlayerVehicleInfo[giveplayerid][listitem][pvModelId] = 0;
+		
+		// Check if slot is valid and has a vehicle
+		if(listitem < 0 || listitem >= MAX_PLAYERVEHICLES) {
+		    SendClientMessage(playerid, COLOR_GRAD2, "Slot xe khong hop le!");
+		    return 1;
+		}
+		
+		if(PlayerVehicleInfo[giveplayerid][listitem][pvModelId] == 0) {
+		    SendClientMessage(playerid, COLOR_GRAD2, "Slot xe trong!");
+		    return 1;
+		}
+		
+		// Get model before removal for logging
+		new model = PlayerVehicleInfo[giveplayerid][listitem][pvModelId];
+		
+		// Use HandleVehicleRemoval function from garage system for proper cleanup
+		HandleVehicleRemoval(giveplayerid, listitem);
+		
+		// Store slot ID before resetting data
+		new slotId = PlayerVehicleInfo[giveplayerid][listitem][pvSlotId];
+		
+		// Update database to remove the vehicle with callback
+		new query[256];
+		format(query, sizeof(query), "DELETE FROM `vehicles` WHERE `id` = '%d'", slotId);
+		mysql_pquery(MainPipeline, query, "OnVehicleDeleteComplete", "ii", giveplayerid, slotId);
+		
+		// Reset additional vehicle data that HandleVehicleRemoval doesn't cover
         PlayerVehicleInfo[giveplayerid][listitem][pvPosX] = 0.0;
         PlayerVehicleInfo[giveplayerid][listitem][pvPosY] = 0.0;
         PlayerVehicleInfo[giveplayerid][listitem][pvPosZ] = 0.0;
@@ -6175,29 +6197,33 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         PlayerVehicleInfo[giveplayerid][listitem][pvPark] = 0;
         PlayerVehicleInfo[giveplayerid][listitem][pvVW] = 0;
         PlayerVehicleInfo[giveplayerid][listitem][pvInt] = 0;
-        if(PlayerVehicleInfo[giveplayerid][listitem][pvSpawned])
-		{
-	        PlayerVehicleInfo[giveplayerid][iVehicleID][pvSpawned] = 0;
-	        DestroyVehicle(iVehicleID);
-			PlayerVehicleInfo[playerid][listitem][pvId] = INVALID_PLAYER_VEHICLE_ID;
-	        VehicleSpawned[giveplayerid]--;
-			
-	    }
-		DestroyPlayerVehicle(giveplayerid, listitem);
+        PlayerVehicleInfo[giveplayerid][listitem][pvSlotId] = 0;
+        
+        // Update vehicle spawn count
+        if(VehicleSpawned[giveplayerid] > 0) {
+            VehicleSpawned[giveplayerid]--;
+        }
+	    
+        // Reset vehicle mods
         for(new m = 0; m < MAX_MODS; m++)
 		{
             PlayerVehicleInfo[giveplayerid][listitem][pvMods][m] = 0;
 		}
-		format(string, sizeof(string), "AdmCmd: Admin %s da xoa %s's xe (VehModel:%d)", GetPlayerNameEx(playerid), GetPlayerNameEx(giveplayerid), model);
-  		Log("logs/admin.log", string);
-  		ABroadCast(COLOR_YELLOW, string, 4);
+		
+		// Log and announce the removal
+		new logString[128];
+		format(logString, sizeof(logString), "AdmCmd: Admin %s da xoa %s's xe (VehModel:%d)", GetPlayerNameEx(playerid), GetPlayerNameEx(giveplayerid), model);
+  		Log("logs/admin.log", logString);
+  		ABroadCast(COLOR_YELLOW, logString, 4);
 
-  		format(string, sizeof(string), "* Admin %s da xoa mot trong nhung chiec xe cua ban.", GetPlayerNameEx(playerid));
-		SendClientMessageEx(giveplayerid, COLOR_YELLOW, string);
+  		format(logString, sizeof(logString), "* Admin %s da xoa mot trong nhung chiec xe cua ban.", GetPlayerNameEx(playerid));
+		SendClientMessageEx(giveplayerid, COLOR_YELLOW, logString);
 
-  		format(string, sizeof(string), "* Ban da bi xoa xe %s's .", GetPlayerNameEx(giveplayerid));
-		SendClientMessageEx(playerid, COLOR_YELLOW, string);
+  		format(logString, sizeof(logString), "* Ban da bi xoa xe %s's .", GetPlayerNameEx(giveplayerid));
+		SendClientMessageEx(playerid, COLOR_YELLOW, logString);
 
+		// Force comprehensive sync after removal to ensure all systems are updated
+		SyncVehicleSystem(giveplayerid);
 	}
 	if(dialogid == TRACKCAR2)
 	{
@@ -16682,9 +16708,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 				number_format(PlayerInfo[targetid][pVehicleSlot]),
 				number_format(PlayerInfo[targetid][pToySlot]),
 				pvtstring);
-				#if defined zombiemode
-				format(resultline, sizeof(resultline), "%s\n\
-				Cure Vials: %d", resultline, PlayerInfo[targetid][pVials]);
+
 				ShowPlayerDialog(playerid, DISPLAY_INV2, DIALOG_STYLE_MSGBOX, header, resultline, "Trang dau", "Dong lai");
 			}
 			else DeletePVar(playerid, "ShowInventory");
@@ -17983,5 +18007,19 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			}
 		}
 	}
+	return 1;
+}
+
+forward OnVehicleDeleteComplete(playerid, slotId);
+public OnVehicleDeleteComplete(playerid, slotId)
+{
+    if(!IsPlayerConnected(playerid)) return 0;
+    
+    new logString[128];
+    format(logString, sizeof(logString), "[VEHICLE_DELETE] Successfully deleted vehicle with slot ID %d for player %s (ID: %d)", slotId, GetPlayerNameEx(playerid), playerid);
+    Log("logs/vehicledebug.log", logString);
+    
+    SyncVehicleSystem(playerid);
+    
 	return 1;
 }

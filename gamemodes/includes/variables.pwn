@@ -3,79 +3,8 @@ new MySQL:MainPipeline;
 new MySQL:ShopPipeline;
 new ShopToggle = 0;
  
-#if defined zombiemode
-new zombieevent;
-#endif
-
 #if defined event_chancegambler
 new chancegambler;
-#endif
-
-#if defined zombiemode
-new Float:ZombieSpawns[62][4] = {
-	{2769.2925,-2089.1626,12.0251,83.2693},
-	{2701.5674,-1834.3137,10.3125,100.1895},
-	{2767.2363,-1566.2611,20.8337,85.2709},
-	{2830.0146,-1359.4216,24.7349,121.7861},
-	{2555.4099,-916.6085,94.3540,99.5157},
-	{2508.6150,-278.0373,16.9119,80.0654},
-	{2378.6587,294.4337,20.0692,199.4465},
-	{2284.2292,1042.9535,10.8203,225.1401},
-	{2323.7227,1283.2747,97.6038,187.7805},
-	{2373.0986,1956.7019,6.0156,215.9083},
-	{2550.4517,2321.3643,3.4831,351.0779},
-	{2224.9348,2537.9519,11.0222,2.8163},
-	{1633.2236,2072.5002,11.0626,211.0165},
-	{1860.6730,1497.2793,8.0484,103.5422},
-	{1633.2701,665.6920,10.8203,359.6830},
-	{816.6675,856.7156,12.7891,294.5815},
-	{193.1662,1373.4420,14.9219,178.7664},
-	{-181.3267,1517.7977,35.6679,306.2709},
-	{388.3340,2589.0615,16.4774,150.6387},
-	{-782.2084,2491.9431,99.8088,32.5109},
-	{-1157.4725,1955.2711,117.0372,173.1264},
-	{-1678.2843,2436.9778,75.3277,38.3918},
-	{-2139.4614,2650.9126,155.2020,92.9123},
-	{-2885.4045,2552.2139,261.9760,257.0046},
-	{-2712.4702,1266.0345,14.5275,232.0103},
-	{-2777.3147,876.2353,55.6501,98.1666},
-	{-2429.6699,642.0405,34.0675,124.8727},
-	{-2134.6548,370.1073,35.1719,354.8381},
-	{-2106.1765,136.8254,39.2737,68.1354},
-	{-2332.6023,31.2750,35.3200,352.5979},
-	{-2481.1897,-284.3549,35.5880,120.4393},
-	{-2147.4797,-245.3284,36.5156,89.8048},
-	{-1641.0974,-33.8037,3.8063,313.3118},
-	{-1678.2706,-772.7601,61.3971,13.8349},
-	{-1993.6145,-1543.2251,84.7795,178.9631},
-	{-1850.9301,-1699.3285,40.8672,40.7818},
-	{-1806.5605,-2245.7180,72.3877,272.3140},
-	{-2672.7725,-2134.7742,37.7934,193.8606},
-	{-947.5450,-2090.1013,113.4716,20.9950},
-	{-823.4070,-1564.1321,128.0549,225.8936},
-	{-495.8162,-442.9817,36.3038,319.8945},
-	{-89.6936,-36.4489,6.4844,151.9229},
-	{511.0306,-288.9214,23.0598,191.3307},
-	{847.1105,-629.9376,27.6024,216.5427},
-	{1094.4984,-672.8294,112.1078,154.9627},
-	{604.7968,-1294.8607,15.8359,170.6295},
-	{655.7311,-1610.1833,15.0000,70.2169},
-	{837.6950,-1857.7500,8.3979,126.3041},
-	{1223.1130,-1915.6439,30.8465,176.3420},
-	{1412.7804,-1304.8748,9.5430,178.6078},
-	{1115.8658,-1089.9353,25.8061,184.0796},
-	{1292.1049,-1026.7606,33.8984,161.6877},
-	{1473.4871,-1242.1685,15.0859,86.9687},
-	{1851.8678,-1574.9648,13.6336,48.7417},
-	{2036.7904,-1477.5708,14.2850,265.2336},
-	{2445.4973,-1460.6742,24.0000,94.7786},
-	{2397.3071,-1777.3590,13.5469,222.2598},
-	{1917.5731,-1891.3939,15.0373,99.1420},
-	{1499.7932,-2270.0461,13.5469,311.1747},
-	{1127.8864,-2346.0579,13.3368,239.6616},
-	{184.9726,-1767.2711,4.4174,220.0172},
-	{-852.2209,-652.9780,123.5095,38.3781}
-};
 #endif
 
 #if defined SHOPAUTOMATED
@@ -86,7 +15,7 @@ enum VehicleNameShopEnum
 }
 #endif
 
-new ToyList = mS_INVALID_LISTID, CarList = mS_INVALID_LISTID, PlaneList = mS_INVALID_LISTID, BoatList = mS_INVALID_LISTID,  CarList2 = mS_INVALID_LISTID,  ToyList2 = mS_INVALID_LISTID, CarList3 = mS_INVALID_LISTID, SkinList = mS_INVALID_LISTID;
+new ToyList = -1, CarList = -1, PlaneList = -1, BoatList = -1,  CarList2 = -1,  ToyList2 = -1, CarList3 = -1, SkinList = -1;
 
 new lockercosttype[][] = { "Locker Stock", "Group Budget", "Player" };
 new stock
@@ -317,24 +246,6 @@ new DeckTextdrw[53][] = {
 "LD_CARD:cd12s", // Q Spades - 50
 "LD_CARD:cd13s" // K Spades - 51
 };
-
-// settings dynamic per player lists
-new gCustomList[MAX_PLAYERS][mS_CUSTOM_MAX_ITEMS];
-new PlayerText:gCurrentPageTextDrawId[MAX_PLAYERS];
-new PlayerText:gHeaderTextDrawId[MAX_PLAYERS];
-new PlayerText:gBackgroundTextDrawId[MAX_PLAYERS];
-new PlayerText:gNextButtonTextDrawId[MAX_PLAYERS];
-new PlayerText:gPrevButtonTextDrawId[MAX_PLAYERS];
-new PlayerText:gCancelButtonTextDrawId[MAX_PLAYERS];
-new PlayerText:gSelectionItems[MAX_PLAYERS][mS_SELECTION_ITEMS];
-new gSelectionItemsTag[MAX_PLAYERS][mS_SELECTION_ITEMS];
-new gItemAt[MAX_PLAYERS];
-new gLists[mS_TOTAL_LISTS][2]; // list information start/end index
-new gItemList[mS_TOTAL_ITEMS][2];
-new Float:gRotZoom[mS_TOTAL_ROT_ZOOM][4]; // Array for saving rotation and zoom info
-new gItemAmount = 0; // Amount of items used
-new gListAmount = 0; // Amount of lists used
-new gRotZoomAmount = 0; // Amount of Rotation/Zoom informations used
 
 // Textdraw Global Variables
 new Text:MainMenuTxtdraw[12];

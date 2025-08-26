@@ -1,6 +1,5 @@
 #include <YSI\YSI_Coding\y_hooks>
 
-// ================ BANK SYSTEM CONFIGURATION ================
 #define MAX_BANK_ACCOUNTS 1000
 #define BANK_DIALOG_ID 8000
 #define BANK_TRANSFER_DIALOG_ID 8002
@@ -8,25 +7,21 @@
 #define BANK_HISTORY_DIALOG_ID 8004
 #define BANK_CONFIRM_DIALOG_ID 8005
 
-// Transaction Limits
 #define MIN_TRANSACTION_AMOUNT 1
 #define MAX_TRANSACTION_AMOUNT 10000000
 #define MAX_CASH_LIMIT 50000000
 #define MAX_BANK_LIMIT 100000000
-#define TRANSACTION_COOLDOWN 2 // seconds (reduced from 3)
-#define MAX_DAILY_TRANSACTIONS 100 // increased from 50
+#define TRANSACTION_COOLDOWN 2
+#define MAX_DAILY_TRANSACTIONS 100
 
-// Bank Location
 #define BANK_POS_X 1459.0
 #define BANK_POS_Y -1010.0
 #define BANK_POS_Z 26.8
 
-// UI Configuration
 #define BANK_TD_BASE_X 150.0
 #define BANK_TD_BASE_Y 120.0
 #define MAX_TRANSACTION_HISTORY 10
 
-// Animation & Effects
 #define BANK_FADE_TIME 500
 #define BUTTON_HOVER_COLOR 0x66BB6AFF
 #define BUTTON_NORMAL_COLOR 0x4CAF50FF
@@ -42,7 +37,7 @@ enum E_PLAYER_BANK_DATA
     pb_DailyTransactions,
     pb_LastTransactionDay,
     pb_CurrentPage,
-    pb_UIMode, // 0 = main, 1 = history, 2 = settings
+    pb_UIMode,
     pb_SecurityLevel,
     pb_LastLoginTime,
     Float:pb_LastBankX,
@@ -59,16 +54,14 @@ enum E_BANK_MENU_OPTIONS
     BANK_OPTION_EXIT
 }
 
-// ================ MODERN OPEN.MP VARIABLES ================
 new PlayerBankData[MAX_PLAYERS][E_PLAYER_BANK_DATA];
-new PlayerText:BankTD[MAX_PLAYERS][35]; // Increased for modern UI
+new PlayerText:BankTD[MAX_PLAYERS][35];
 new Timer:BankAnimationTimer[MAX_PLAYERS] = {Timer:-1, ...};
 new Timer:BankUpdateTimer[MAX_PLAYERS] = {Timer:-1, ...};
 
-// Transaction History Storage (using Open.mp dynamic arrays would be better for production)
 enum E_TRANSACTION_HISTORY
 {
-    th_Type, // 0=deposit, 1=withdraw, 2=transfer_out, 3=transfer_in
+    th_Type,
     th_Amount,
     th_Timestamp,
     th_TargetID,
@@ -77,10 +70,8 @@ enum E_TRANSACTION_HISTORY
 new PlayerTransactionHistory[MAX_PLAYERS][MAX_TRANSACTION_HISTORY][E_TRANSACTION_HISTORY];
 new PlayerTransactionCount[MAX_PLAYERS];
 
-// ================ MODERN UI CREATION WITH OPEN.MP FEATURES ================
 stock CreateBankTextDraws(playerid)
 {
-    // Main background with gradient effect
     BankTD[playerid][0] = CreatePlayerTextDraw(playerid, 110.0, 90.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, BankTD[playerid][0], 420.0, 340.0);
     PlayerTextDrawAlignment(playerid, BankTD[playerid][0], 1);
@@ -88,7 +79,6 @@ stock CreateBankTextDraws(playerid)
     PlayerTextDrawFont(playerid, BankTD[playerid][0], 4);
     PlayerTextDrawSetShadow(playerid, BankTD[playerid][0], 2);
     
-    // Inner panel with modern design
     BankTD[playerid][1] = CreatePlayerTextDraw(playerid, 115.0, 95.0, "LD_BUM:blkdot");
     PlayerTextDrawTextSize(playerid, BankTD[playerid][1], 410.0, 330.0);
     PlayerTextDrawAlignment(playerid, BankTD[playerid][1], 1);

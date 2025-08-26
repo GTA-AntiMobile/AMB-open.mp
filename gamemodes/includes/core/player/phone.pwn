@@ -77,7 +77,7 @@ ShowServiceList(playerid, service) {
         case 1: { // Police
             strcpy(title, "Canh Sat", sizeof(title));
             
-            for(new i = 0; i < MAX_PLAYERS; i++) {
+            foreach(new i: Player) {
                 if(IsPlayerConnected(i) && IsACop(i) && PlayerInfo[i][pDuty] == 1) {
                     new name[MAX_PLAYER_NAME];
                     GetPlayerName(i, name, sizeof(name));
@@ -89,7 +89,7 @@ ShowServiceList(playerid, service) {
         case 2: { // Medic  
             strcpy(title, "Bac Si", sizeof(title));
             
-            for(new i = 0; i < MAX_PLAYERS; i++) {
+            foreach(new i: Player) {
                 if(IsPlayerConnected(i) && IsAMedic(i) && PlayerInfo[i][pDuty] == 1) {
                     new name[MAX_PLAYER_NAME];
                     GetPlayerName(i, name, sizeof(name));
@@ -101,7 +101,7 @@ ShowServiceList(playerid, service) {
         case 3: { // Taxi
             strcpy(title, "Taxi", sizeof(title));
             
-            for(new i = 0; i < MAX_PLAYERS; i++) {
+            foreach(new i: Player) {
                 if(IsPlayerConnected(i) && IsATaxiDriver(i) && PlayerInfo[i][pDuty] == 1) {
                     new name[MAX_PLAYER_NAME];
                     GetPlayerName(i, name, sizeof(name));
@@ -132,7 +132,7 @@ CallServiceMember(playerid, service, listitem) {
     }
     
     new count = 0;
-    for(new i = 0; i < MAX_PLAYERS; i++) {
+    foreach(new i: Player) {
         new bool:isValidService = false;
         
         switch(service) {

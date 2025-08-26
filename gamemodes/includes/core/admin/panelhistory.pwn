@@ -1,5 +1,18 @@
 #include <YSI\YSI_Coding\y_hooks>
 
+#define DEATH_WEAPON_COLLISION            54
+#define DEATH_WEAPON_DROWN                53
+#define DEATH_WEAPON_FALL                 51
+#define DEATH_WEAPON_EXPLOSION            51
+#define DEATH_WEAPON_FIRE                 51
+#define DEATH_WEAPON_VEHICLE              49
+#define DEATH_WEAPON_HELIBLADES           50
+
+#define HISTORY_MONEY_TYPE_ADMIN_GIVE       10
+#define HISTORY_MONEY_TYPE_PAY              11
+#define HISTORY_MONEY_TYPE_BANK_DEPOSIT     12
+#define HISTORY_MONEY_TYPE_BANK_WITHDRAW    13
+
 #define DIALOG_HISTORY_MAIN         6000
 #define DIALOG_HISTORY_DEATH        6001
 #define DIALOG_HISTORY_MONEY        6002
@@ -35,7 +48,7 @@ new PlayerHistoryRecords[MAX_PLAYERS];
 #define HISTORY_THREAD_SEARCH       102
 
 
-stock LogPlayerDeath(playerid, killerid, const reason[], WEAPON:weaponid, Float:x, Float:y, Float:z)
+stock LogPlayerDeath(playerid, killerid, const reason[], WEAPON:weaponid, Float:x, Float:y, Float:z, deathType = DEATH_TYPE_KILLED)
 {
     new query[512], location[64], killerName[MAX_PLAYER_NAME];
     
@@ -47,9 +60,7 @@ stock LogPlayerDeath(playerid, killerid, const reason[], WEAPON:weaponid, Float:
         format(killerName, sizeof(killerName), "Unknown");
     }
     
-    new deathType = DEATH_TYPE_KILLED;
-    if(killerid == INVALID_PLAYER_ID) deathType = DEATH_TYPE_ACCIDENT;
-    if(killerid == playerid) deathType = DEATH_TYPE_SUICIDE;
+
     
     format(query, sizeof(query), 
         "INSERT INTO `player_deaths` (`player_id`, `player_name`, `killer_id`, `killer_name`, `weapon_id`, `death_type`, `reason`, `location`, `pos_x`, `pos_y`, `pos_z`, `date`) VALUES (%d, '%s', %d, '%s', %d, %d, '%s', '%s', %.2f, %.2f, %.2f, NOW())",
@@ -61,9 +72,17 @@ stock LogPlayerDeath(playerid, killerid, const reason[], WEAPON:weaponid, Float:
     mysql_pquery(MainPipeline, query, "OnQueryFinish", "i", SENDDATA_THREAD);
     
     new adminMsg[256];
-    format(adminMsg, sizeof(adminMsg), "[DEATH LOG] %s da chet boi %s (Weapon: %d) tai %s", 
-        GetPlayerNameExt(playerid), killerName, _:weaponid, location);
-    SendMessageToAdmins(0xFF6347FF, adminMsg, 1);
+    new deathTypeStr[32];
+    switch(deathType) {
+        case DEATH_TYPE_ACCIDENT: format(deathTypeStr, sizeof(deathTypeStr), "Tai nan");
+        case DEATH_TYPE_SUICIDE: format(deathTypeStr, sizeof(deathTypeStr), "Tu tu");
+        case DEATH_TYPE_KILLED: format(deathTypeStr, sizeof(deathTypeStr), "Bi giet");
+        default: format(deathTypeStr, sizeof(deathTypeStr), "Unknown");
+    }
+    
+    format(adminMsg, sizeof(adminMsg), "[DEATH LOG] %s %s boi %s (Weapon: %d) tai %s", 
+        GetPlayerNameExt(playerid), deathTypeStr, killerName, _:weaponid, location);
+    SendAdminMessage(0xFF6347FF, adminMsg, 1);
 }
 
 stock LogMoneyTransfer(playerid, targetid, amount, transferType, const reason[])
@@ -90,7 +109,7 @@ stock LogMoneyTransfer(playerid, targetid, amount, transferType, const reason[])
     new adminMsg[256];
     format(adminMsg, sizeof(adminMsg), "[MONEY LOG] %s chuyen $%s cho %s (%s)", 
         GetPlayerNameExt(playerid), number_format(amount), targetName, reason);
-    SendMessageToAdmins(0xFFFF00FF, adminMsg, 1);
+    SendAdminMessage(0xFFFF00FF, adminMsg, 1);
 }
 
 stock LogWeaponTake(playerid, weaponid, ammo, weaponType, groupid, const reason[])
@@ -117,7 +136,43 @@ stock LogWeaponTake(playerid, weaponid, ammo, weaponType, groupid, const reason[
     new adminMsg[256];
     format(adminMsg, sizeof(adminMsg), "[WEAPON LOG] %s lay %s tu %s tai %s", 
         GetPlayerNameExt(playerid), GetWeaponNameEx(weaponid), groupName, location);
-    SendMessageToAdmins(0xFFA500FF, adminMsg, 1);
+    SendAdminMessage(0xFFA500FF, adminMsg, 1);
+}
+
+// Admin Log cho lệnh givemoney
+stock LogAdminMoneyGive(playerid, targetid, amount, const reason[])
+{
+    new query[512], location[64], targetName[MAX_PLAYER_NAME];
+    
+    GetPlayerZone(playerid, location, sizeof(location));
+    
+    if(targetid != INVALID_PLAYER_ID) {
+        GetPlayerName(targetid, targetName, sizeof(targetName));
+    } else {
+        format(targetName, sizeof(targetName), "Unknown");
+    }
+    
+    format(query, sizeof(query), 
+        "INSERT INTO `admin_logs` (`admin_id`, `admin_name`, `target_id`, `target_name`, `action_type`, `amount`, `reason`, `location`, `date`) VALUES (%d, '%s', %d, '%s', 'givemoney', %d, '%s', '%s', NOW())",
+        GetPlayerSQLId(playerid), GetPlayerNameExt(playerid),
+        (targetid != INVALID_PLAYER_ID) ? GetPlayerSQLId(targetid) : -1,
+        targetName, amount, reason, location
+    );
+    
+    mysql_pquery(MainPipeline, query, "OnQueryFinish", "i", SENDDATA_THREAD);
+    
+    // Thông báo cho tất cả admin level 2+
+    new adminMsg[256];
+    format(adminMsg, sizeof(adminMsg), "[ADMIN LOG] %s da give $%s cho %s (%s) tai %s", 
+        GetPlayerNameExt(playerid), number_format(amount), targetName, reason, location);
+    SendAdminMessage(0xFF0000FF, adminMsg, 2);
+    
+    // Log v� o file
+    new logMsg[256];
+    format(logMsg, sizeof(logMsg), "[ADMIN GIVEMONEY] %s (ID:%d | IP:%s) da give $%s cho %s (ID:%d | IP:%s) - Ly do: %s", 
+        GetPlayerNameExt(playerid), playerid, GetPlayerIpEx(playerid), 
+        number_format(amount), targetName, targetid, GetPlayerIpEx(targetid), reason);
+    Log("logs/admin_givemoney.log", logMsg);
 }
 
 
@@ -232,18 +287,27 @@ public OnHistoryLoad(playerid, loadHistoryType)
     switch(loadHistoryType) {
         case HISTORY_TYPE_DEATH: {
             format(title, sizeof(title), "Lich su tu vong - Trang %d", PlayerHistoryPage[playerid] + 1);
-            strcat(string, "{FFFFFF}Nguoi choi\t{FF6B6B}Ke giet\t{FFFF00}Vu khi\t{00FF00}Thoi gian\n");
+            strcat(string, "{FFFFFF}Nguoi choi\t{FF6B6B}Ke giet\t{FFFF00}Loai chet\t{00FF00}Thoi gian\n");
             
             for(new i = 0; i < rows; i++) {
-                new playerName[MAX_PLAYER_NAME], killerName[MAX_PLAYER_NAME], weaponId, dateStr[32];
+                new playerName[MAX_PLAYER_NAME], killerName[MAX_PLAYER_NAME], weaponId, deathType, dateStr[32];
+                new deathTypeStr[32];
                 
                 cache_get_value_name(i, "player_name", playerName);
                 cache_get_value_name(i, "killer_name", killerName);
                 cache_get_value_name_int(i, "weapon_id", weaponId);
+                cache_get_value_name_int(i, "death_type", deathType);
                 cache_get_value_name(i, "date", dateStr);
                 
+                switch(deathType) {
+                    case DEATH_TYPE_ACCIDENT: format(deathTypeStr, sizeof(deathTypeStr), "Tai nan");
+                    case DEATH_TYPE_SUICIDE: format(deathTypeStr, sizeof(deathTypeStr), "Tu tu");
+                    case DEATH_TYPE_KILLED: format(deathTypeStr, sizeof(deathTypeStr), "Bi giet");
+                    default: format(deathTypeStr, sizeof(deathTypeStr), "Unknown");
+                }
+                
                 format(temp, sizeof(temp), "{FFFFFF}%s\t{FF6B6B}%s\t{FFFF00}%s\t{00FF00}%s\n", 
-                    playerName, killerName, GetWeaponNameEx(weaponId), dateStr);
+                    playerName, killerName, deathTypeStr, dateStr);
                 strcat(string, temp);
             }
         }
@@ -344,6 +408,38 @@ stock SendMessageToAdmins(color, const message[], level)
         }
     }
     return 1;
+}
+
+stock SendAdminMessage(color, const message[], level = 1)
+{
+    foreach(new i : Player) {
+        if(PlayerInfo[i][pAdmin] >= level) {
+            SendClientMessage(i, color, message);
+        }
+    }
+    return 1;
+}
+
+stock LoggedGivePlayerCash(playerid, amount, const reason[])
+{
+    GivePlayerCash(playerid, amount);
+    
+    LogMoneyTransfer(INVALID_PLAYER_ID, playerid, amount, HISTORY_MONEY_TYPE_ADMIN_GIVE, reason);
+    
+    return 1;
+}
+
+stock LoggedTransferMoney(playerid, targetid, amount, const reason[])
+{
+    if(PlayerInfo[playerid][pCash] >= amount) {
+        PlayerInfo[playerid][pCash] -= amount;
+        PlayerInfo[targetid][pCash] += amount;
+        
+        LogMoneyTransfer(playerid, targetid, amount, HISTORY_MONEY_TYPE_PAY, reason);
+        
+        return 1;
+    }
+    return 0;
 }
 
 
@@ -456,7 +552,7 @@ hook OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
             
             new recordCount = PlayerHistoryRecords[playerid];
             new navigationStart = recordCount;
-            
+             
             new hasPrevButton = (PlayerHistoryPage[playerid] > 0);
             new hasNextButton = (recordCount >= 10);
             
@@ -541,15 +637,45 @@ hook OnPlayerDeath(playerid, killerid, WEAPON:reason)
     GetPlayerPos(playerid, x, y, z);
     
     new deathReason[64];
+    new deathType = DEATH_TYPE_KILLED;
+    
     if(killerid == INVALID_PLAYER_ID) {
-        format(deathReason, sizeof(deathReason), "Tu vong do tai nan");
+        if(reason == DEATH_WEAPON_COLLISION) {
+            format(deathReason, sizeof(deathReason), "Tai nan xe");
+            deathType = DEATH_TYPE_ACCIDENT;
+        } else if(reason == DEATH_WEAPON_DROWN) {
+            format(deathReason, sizeof(deathReason), "Chet duoi nuoc");
+            deathType = DEATH_TYPE_ACCIDENT;
+        } else if(reason == DEATH_WEAPON_FALL) {
+            format(deathReason, sizeof(deathReason), "Chet do roi cao");
+            deathType = DEATH_TYPE_ACCIDENT;
+        } else if(reason == DEATH_WEAPON_EXPLOSION) {
+            format(deathReason, sizeof(deathReason), "Chet do no");
+            deathType = DEATH_TYPE_ACCIDENT;
+        } else if(reason == DEATH_WEAPON_FIRE) {
+            format(deathReason, sizeof(deathReason), "Chet do chay");
+            deathType = DEATH_TYPE_ACCIDENT;
+        } else {
+            format(deathReason, sizeof(deathReason), "Chet do tai nan");
+            deathType = DEATH_TYPE_ACCIDENT;
+        }
     } else if(killerid == playerid) {
         format(deathReason, sizeof(deathReason), "Tu tu");
+        deathType = DEATH_TYPE_SUICIDE;
     } else {
-        format(deathReason, sizeof(deathReason), "Bi giet boi %s", GetPlayerNameExt(killerid));
+        if(reason == DEATH_WEAPON_VEHICLE) {
+            format(deathReason, sizeof(deathReason), "Bi dam xe giet boi %s", GetPlayerNameExt(killerid));
+            deathType = DEATH_TYPE_KILLED;
+        } else if(reason == DEATH_WEAPON_HELIBLADES) {
+            format(deathReason, sizeof(deathReason), "Bi may bay giet boi %s", GetPlayerNameExt(killerid));
+            deathType = DEATH_TYPE_KILLED;
+        } else {
+            format(deathReason, sizeof(deathReason), "Bi giet boi %s", GetPlayerNameExt(killerid));
+            deathType = DEATH_TYPE_KILLED;
+        }
     }
     
-    LogPlayerDeath(playerid, killerid, deathReason, reason, x, y, z);
+    LogPlayerDeath(playerid, killerid, deathReason, reason, x, y, z, deathType);
     return 1;
 }
 
@@ -557,7 +683,7 @@ stock LoggedTransferStorage(playerid, targetid, amount, const reason[])
 {
     TransferStorage(targetid, -1, playerid, 0, 1, amount, -1, -1);
     
-    LogMoneyTransfer(playerid, targetid, amount, MONEY_TYPE_GIVE, reason);
+    LogMoneyTransfer(playerid, targetid, amount, HISTORY_MONEY_TYPE_PAY, reason);
     
     return 1;
 }
@@ -568,7 +694,7 @@ stock LoggedBankDeposit(playerid, amount)
         PlayerInfo[playerid][pCash] -= amount;
         PlayerInfo[playerid][pAccount] += amount;
         
-        LogMoneyTransfer(playerid, INVALID_PLAYER_ID, amount, MONEY_TYPE_BANK_DEPOSIT, "Gui tien vao ngan hang");
+        LogMoneyTransfer(playerid, INVALID_PLAYER_ID, amount, HISTORY_MONEY_TYPE_BANK_DEPOSIT, "Gui tien vao ngan hang");
         
         return 1;
     }
@@ -581,7 +707,7 @@ stock LoggedBankWithdraw(playerid, amount)
         PlayerInfo[playerid][pAccount] -= amount;
         PlayerInfo[playerid][pCash] += amount;
         
-        LogMoneyTransfer(playerid, INVALID_PLAYER_ID, amount, MONEY_TYPE_BANK_WITHDRAW, "Rut tien tu ngan hang");
+        LogMoneyTransfer(playerid, INVALID_PLAYER_ID, amount, HISTORY_MONEY_TYPE_BANK_WITHDRAW, "Rut tien tu ngan hang");
         
         return 1;
     }

@@ -97,7 +97,7 @@
     "pawn": {
         "legacy_plugins": [
 	    "crashdetect","streamer","PawnPlus","ColAndreas", 
-	    "mysql","samp_bcrypt","Whirlpool","pawn-memory","requests"
+	    "mysql","samp_bcrypt","Whirlpool","pawn-memory"
         ],
         "main_scripts": [
             "amb-compile 1"
