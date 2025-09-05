@@ -2,15 +2,15 @@
 
 ## 🔴 CRITICAL: Duplicate Commands Table
 
-| Command Name | Occurrences | System | Risk Level | Action Required |
-|--------------|-------------|--------|------------|----------------|
-| **repair** | 4 times | Vehicle | 🔴 CRITICAL | Merge implementations |
-| **setarmor** | 4 times | Admin | 🔴 CRITICAL | Remove duplicates |
-| **sethp** | 4 times | Admin | 🔴 CRITICAL | Remove duplicates |
-| **stopanim** | 4 times | Animation | 🔴 CRITICAL | Remove duplicates |
-| **911** | 3 times | Emergency | 🟠 HIGH | Consolidate handlers |
-| **arrest** | 3 times | Police | 🟠 HIGH | Fix conflict |
-| **balance** | 3 times | Banking | 🟠 HIGH | Unify banking logic |
+| Command Name | Occurrences | System | Risk Level | Action Required | Fixed?
+|--------------|-------------|--------|------------|----------------|  ----------------|
+| **repair** | 4 times | Vehicle | 🔴 CRITICAL | Merge implementations | X
+| **setarmor** | 4 times | Admin | 🔴 CRITICAL | Remove duplicates | X
+| **sethp** | 4 times | Admin | 🔴 CRITICAL | Remove duplicates | X
+| **stopanim** | 4 times | Animation | 🔴 CRITICAL | Remove duplicates | X
+| **911** | 3 times | Emergency | 🟠 HIGH | Consolidate handlers | X
+| **arrest** | 3 times | Police | 🟠 HIGH | Fix conflict | X
+| **balance** | 3 times | Banking | 🟠 HIGH | Unify banking logic | X
 | **call** | 3 times | Phone | 🟠 HIGH | Fix phone system |
 | **contacts** | 3 times | Phone | 🟠 HIGH | Remove duplicates |
 | **cuff** | 3 times | Police | 🟠 HIGH | Consolidate police tools |
@@ -30,7 +30,7 @@
 | **setmyhp** | 3 times | Admin | 🟠 HIGH | Admin tool |
 | **sms** | 3 times | Phone | 🟠 HIGH | Phone messaging |
 | **spec** | 3 times | Admin | 🟠 HIGH | Admin spectate |
-| **stats** | 3 times | Player | 🟠 HIGH | Player info |
+| **stats** | 3 times | Player | 🟠 HIGH | Player info | X
 | **ticket** | 3 times | Police | 🟠 HIGH | Police tickets |
 | **time** | 3 times | Server | 🟠 HIGH | Time system |
 | **withdraw** | 3 times | Banking | 🟠 HIGH | Banking system |
