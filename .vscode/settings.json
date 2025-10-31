@@ -1,0 +1,15 @@
+{
+  // chỉ định version Lua MTA sử dụng
+  "Lua.runtime.version": "Lua 5.1",
+
+  // thêm thư viện definitions của MTA
+  "Lua.workspace.library": [
+    "C:/Users/Sei/Documents/git/mta-annotations-for-lua-language-server"
+  ],
+
+  // tránh bị báo lỗi khi dùng global function của MTA
+  "Lua.diagnostics.disable": [
+    "undefined-global",
+    "lowercase-global"
+  ]
+}
